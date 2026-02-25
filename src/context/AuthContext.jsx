@@ -20,18 +20,20 @@ export const AuthProvider = ({ children }) => {
                     const userDoc = await getDoc(doc(db, 'users', user.uid));
                     if (userDoc.exists()) {
                         let role = userDoc.data().role;
-                        // Frontend Override: Upgrade manager to admin to bypass Firestore Quota limits
-                        if (role === 'manager') {
+
+                        // Targeted Frontend Override: If local storage has forced admin, upgrade them
+                        if (localStorage.getItem('forceAdmin') === 'true') {
                             role = 'admin';
                         }
+
                         setUserRole(role);
                     } else {
-                        setUserRole('admin'); // fallback to admin if doc missing due to quotas
+                        setUserRole(localStorage.getItem('forceAdmin') === 'true' ? 'admin' : 'manager'); // fallback
                     }
                 } catch (e) {
                     console.error("Error fetching user role, likely Quota Limit Reached:", e);
-                    // Fallback to admin if the database denies the read request due to limits
-                    setUserRole('admin');
+                    // Fallback to strict role protection if the database denies the read request due to limits
+                    setUserRole(localStorage.getItem('forceAdmin') === 'true' ? 'admin' : 'manager');
                 }
             } else {
                 setUserRole(null);

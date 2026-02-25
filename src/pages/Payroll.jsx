@@ -254,9 +254,9 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                             <th>Служител</th>
                             <th>Начин</th>
                             <th>Отработени Дни/Часове</th>
-                            <th>Ставка</th>
+                            <th style={{ textAlign: 'center' }}>Ставка</th>
                             <th style={{ textAlign: 'right' }}>Аванси</th>
-                            <th style={{ textAlign: 'right' }}>Остатък за Плащане</th>
+                            {userRole === 'admin' && <th style={{ textAlign: 'right' }}>Остатък за Плащане</th>}
                             <th style={{ textAlign: 'right' }}>Действия</th>
                         </tr>
                     </thead>
@@ -310,7 +310,7 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                                     </td>
                                     <td style={{ textAlign: 'center' }} data-label="Дни/Часове">{`${totalHours} ч.`}</td>
                                     <td style={{ textAlign: 'center' }} data-label="Ставка">
-                                        {emp.hourlyRate ? `${emp.hourlyRate.toFixed(2)} €/ч` : (emp.dailyRate ? `${emp.dailyRate.toFixed(2)} €/ден` : '-')}
+                                        {userRole === 'admin' ? (emp.hourlyRate ? `${emp.hourlyRate.toFixed(2)} €/ч` : (emp.dailyRate ? `${emp.dailyRate.toFixed(2)} €/ден` : '-')) : '***'}
                                     </td>
                                     <td style={{ textAlign: 'right' }} data-label="Аванси">
                                         {editAdvanceModeId === emp.id ? (
@@ -416,9 +416,11 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                                             )
                                         )}
                                     </td>
-                                    <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.1rem', color: isPaid ? 'var(--text-muted)' : 'var(--primary-color)' }} data-label="Остатък">
-                                        {isPaid ? <span style={{ color: 'var(--success-color)', fontSize: '0.9rem' }}>Изплатено</span> : `${remainingSalary.toFixed(2)} €`}
-                                    </td>
+                                    {userRole === 'admin' && (
+                                        <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.1rem', color: isPaid ? 'var(--text-muted)' : 'var(--primary-color)' }} data-label="Остатък">
+                                            {isPaid ? <span style={{ color: 'var(--success-color)', fontSize: '0.9rem' }}>Изплатено</span> : `${remainingSalary.toFixed(2)} €`}
+                                        </td>
+                                    )}
                                     <td style={{ textAlign: 'right' }} data-label="Действия">
                                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', opacity: processingId === emp.id ? 0.5 : 1, pointerEvents: processingId === emp.id ? 'none' : 'auto' }}>
                                             {advanceModeId === emp.id ? (
@@ -525,51 +527,53 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                                                             Отмени
                                                         </button>
                                                     ) : (
-                                                        <button
-                                                            className="btn btn-primary"
-                                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
-                                                            disabled={remainingSalary < 0}
-                                                            onClick={async () => {
-                                                                const method = emp.paymentMethod || 'cash';
-                                                                const methodText = method === 'bank' ? 'по банка' : 'в брой';
-                                                                const confirmMsg = totalAdvances > 0
-                                                                    ? `Потвърдете изплащането на остатъка от ${remainingSalary.toFixed(2)} € за ${emp.name}?`
-                                                                    : `Пълно изплащане на заплата: ${emp.name} за ${selectedMonth} (${methodText})`;
-                                                                if (!window.confirm(confirmMsg)) return;
-                                                                setProcessingId(emp.id);
-                                                                try {
-                                                                    const desc = totalAdvances > 0
-                                                                        ? `Изплатен остатък от заплата: ${emp.name} за ${selectedMonth} (${methodText})`
+                                                        userRole === 'admin' && (
+                                                            <button
+                                                                className="btn btn-primary"
+                                                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                                                                disabled={remainingSalary < 0}
+                                                                onClick={async () => {
+                                                                    const method = emp.paymentMethod || 'cash';
+                                                                    const methodText = method === 'bank' ? 'по банка' : 'в брой';
+                                                                    const confirmMsg = totalAdvances > 0
+                                                                        ? `Потвърдете изплащането на остатъка от ${remainingSalary.toFixed(2)} € за ${emp.name}?`
                                                                         : `Пълно изплащане на заплата: ${emp.name} за ${selectedMonth} (${methodText})`;
+                                                                    if (!window.confirm(confirmMsg)) return;
+                                                                    setProcessingId(emp.id);
+                                                                    try {
+                                                                        const desc = totalAdvances > 0
+                                                                            ? `Изплатен остатък от заплата: ${emp.name} за ${selectedMonth} (${methodText})`
+                                                                            : `Пълно изплащане на заплата: ${emp.name} за ${selectedMonth} (${methodText})`;
 
-                                                                    if (remainingSalary > 0) {
-                                                                        const transactionDate = new Date().toISOString().startsWith(selectedMonth)
-                                                                            ? new Date().toISOString().split('T')[0]
-                                                                            : `${selectedMonth}-01`;
+                                                                        if (remainingSalary > 0) {
+                                                                            const transactionDate = new Date().toISOString().startsWith(selectedMonth)
+                                                                                ? new Date().toISOString().split('T')[0]
+                                                                                : `${selectedMonth}-01`;
 
-                                                                        await addTransaction({
-                                                                            date: transactionDate,
-                                                                            type: 'expense',
-                                                                            category: emp.role || 'ДРУГИ РАСХОДИ',
-                                                                            amount: remainingSalary.toFixed(2),
-                                                                            description: desc,
-                                                                            paymentMethod: method
-                                                                        });
+                                                                            await addTransaction({
+                                                                                date: transactionDate,
+                                                                                type: 'expense',
+                                                                                category: emp.role || 'ДРУГИ РАСХОДИ',
+                                                                                amount: remainingSalary.toFixed(2),
+                                                                                description: desc,
+                                                                                paymentMethod: method
+                                                                            });
+                                                                        }
+
+                                                                        if (currentLog.id) {
+                                                                            await updateDoc(doc(db, 'timeLogs', currentLog.id), { isPaid: true });
+                                                                        } else {
+                                                                            await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, isPaid: true });
+                                                                        }
+                                                                    } catch (err) {
+                                                                        alert("Грешка при запазване: " + err.message);
                                                                     }
-
-                                                                    if (currentLog.id) {
-                                                                        await updateDoc(doc(db, 'timeLogs', currentLog.id), { isPaid: true });
-                                                                    } else {
-                                                                        await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, isPaid: true });
-                                                                    }
-                                                                } catch (err) {
-                                                                    alert("Грешка при запазване: " + err.message);
-                                                                }
-                                                                setProcessingId(null);
-                                                            }}
-                                                        >
-                                                            Изплати
-                                                        </button>
+                                                                    setProcessingId(null);
+                                                                }}
+                                                            >
+                                                                Изплати
+                                                            </button>
+                                                        )
                                                     )}
                                                 </>
                                             )}
@@ -586,10 +590,10 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                             </tr>
                         )}
                     </tbody>
-                    {employees.length > 0 && (
+                    {employees.length > 0 && userRole === 'admin' && (
                         <tfoot>
                             <tr>
-                                <td colSpan="5" style={{ textAlign: 'right', fontWeight: 'bold' }}>Общо остатъчни задължения (месец):</td>
+                                <td colSpan="4" style={{ textAlign: 'right', fontWeight: 'bold' }}>Общо остатъчни задължения (месец):</td>
                                 <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--success-color)' }}>
                                     {grandTotal.toFixed(2)} €
                                 </td>
