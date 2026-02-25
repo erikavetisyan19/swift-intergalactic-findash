@@ -3,13 +3,15 @@ import { useFinance } from '../context/FinanceContext';
 import { Plus, Search, Trash2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
 
 const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(amount);
 };
 
 export const Transactions = () => {
     const { transactions, deleteTransaction, addTransaction, categories } = useFinance();
+    const { userRole } = useAuth();
     const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState('all');
@@ -70,10 +72,12 @@ export const Transactions = () => {
                     <h1 className="page-title">{t('transactions.title')}</h1>
                     <p className="page-subtitle">{t('transactions.subtitle')}</p>
                 </div>
-                <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
-                    <Plus size={18} />
-                    {t('transactions.addTransaction')}
-                </button>
+                {userRole !== 'viewer' && (
+                    <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
+                        <Plus size={18} />
+                        {t('transactions.addTransaction')}
+                    </button>
+                )}
             </div>
 
             <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
@@ -203,11 +207,13 @@ export const Transactions = () => {
                                         <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 600, color: txn.type === 'income' ? 'var(--success)' : 'var(--text-primary)' }}>
                                             {txn.type === 'income' ? '+' : '-'}{formatCurrency(txn.amount)}
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                            <button className="btn-icon" onClick={() => deleteTransaction(txn.id)} title="Delete">
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
+                                        {userRole !== 'viewer' && (
+                                            <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                <button className="btn-icon" onClick={() => deleteTransaction(txn.id)} title="Delete">
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))
                             )}
@@ -272,7 +278,7 @@ export const Transactions = () => {
 
                             <form onSubmit={handleAddTransaction}>
                                 <div className="input-group">
-                                    <label>{t('transactions.colAmount')} ($)</label>
+                                    <label>{t('transactions.colAmount')} (€)</label>
                                     <input type="number" step="0.01" min="0" required value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
                                 </div>
 

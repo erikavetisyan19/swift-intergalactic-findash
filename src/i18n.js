@@ -11,6 +11,7 @@ const resources = {
                 categories: "Categories",
                 invoices: "Invoices",
                 spreadsheet: "Spreadsheet",
+                payroll: "Payroll",
                 signOut: "Sign Out"
             },
             dashboard: {
@@ -171,6 +172,7 @@ const resources = {
                 categories: "Категории",
                 invoices: "Фактури",
                 spreadsheet: "Електронна таблица",
+                payroll: "Заплати",
                 signOut: "Изход"
             },
             dashboard: {
@@ -256,6 +258,13 @@ const resources = {
                 scanProgress: "Сканиране на документа... Моля, изчакайте.",
                 scanError: "Неуспешно сканиране: "
             },
+            payroll: {
+                title: "Заплати",
+                subtitle: "Проследяване на часове и изчисляване на възнаграждения",
+                timeTracking: "Въвеждане на часове",
+                salaryCalc: "Ведомост",
+                employees: "Служители"
+            },
             categoryNames: {
                 "Consulting": "Консултиране",
                 "Sales": "Продажби",
@@ -330,12 +339,12 @@ i18n
     .use(initReactI18next)
     .init({
         resources,
-        fallbackLng: 'en',
+        fallbackLng: 'bg',
         interpolation: {
             escapeValue: false
         },
         detection: {
-            order: ['localStorage', 'navigator'],
+            order: ['localStorage'],
             caches: ['localStorage']
         }
     });

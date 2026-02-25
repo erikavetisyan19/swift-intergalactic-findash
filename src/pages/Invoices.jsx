@@ -4,13 +4,15 @@ import { Plus, Search, Trash2, DollarSign, Camera } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import Tesseract from 'tesseract.js';
+import { useAuth } from '../context/AuthContext';
 
 const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(amount);
 };
 
 export const Invoices = () => {
     const { invoices, addInvoice, updateInvoice, deleteInvoice, addTransaction } = useFinance();
+    const { userRole } = useAuth();
     const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -176,47 +178,49 @@ export const Invoices = () => {
                     <h1 className="text-gradient" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{t('invoices.title')}</h1>
                     <p style={{ color: 'var(--text-secondary)' }}>{t('invoices.subtitle')}</p>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <div>
-                        <input
-                            type="file"
-                            accept="image/*, application/pdf"
-                            capture="environment"
-                            style={{ display: 'none' }}
-                            id="scan-invoice-upload"
-                            onChange={handleScan}
-                            disabled={isScanning}
-                        />
-                        <label
-                            htmlFor="scan-invoice-upload"
-                            className="btn"
-                            style={{
-                                background: 'var(--bg-lighter)',
-                                color: 'var(--text-primary)',
-                                border: '1px solid var(--panel-border)',
-                                cursor: isScanning ? 'not-allowed' : 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                                padding: '0.75rem 1.25rem',
-                                borderRadius: 'var(--radius-md)',
-                                fontWeight: 500,
-                                opacity: isScanning ? 0.7 : 1
-                            }}
-                        >
-                            {isScanning ? (
-                                <div style={{ width: '20px', height: '20px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--text-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                            ) : (
-                                <Camera size={20} />
-                            )}
-                            {isScanning ? scanProgress : t('invoices.scanInvoice')}
-                        </label>
+                {userRole !== 'viewer' && (
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <div>
+                            <input
+                                type="file"
+                                accept="image/*, application/pdf"
+                                capture="environment"
+                                style={{ display: 'none' }}
+                                id="scan-invoice-upload"
+                                onChange={handleScan}
+                                disabled={isScanning}
+                            />
+                            <label
+                                htmlFor="scan-invoice-upload"
+                                className="btn"
+                                style={{
+                                    background: 'var(--bg-lighter)',
+                                    color: 'var(--text-primary)',
+                                    border: '1px solid var(--panel-border)',
+                                    cursor: isScanning ? 'not-allowed' : 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.75rem 1.25rem',
+                                    borderRadius: 'var(--radius-md)',
+                                    fontWeight: 500,
+                                    opacity: isScanning ? 0.7 : 1
+                                }}
+                            >
+                                {isScanning ? (
+                                    <div style={{ width: '20px', height: '20px', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--text-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                                ) : (
+                                    <Camera size={20} />
+                                )}
+                                {isScanning ? scanProgress : t('invoices.scanInvoice')}
+                            </label>
+                        </div>
+                        <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+                            <Plus size={20} />
+                            {t('invoices.addInvoice')}
+                        </button>
                     </div>
-                    <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
-                        <Plus size={20} />
-                        {t('invoices.addInvoice')}
-                    </button>
-                </div>
+                )}
             </div>
 
             <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
@@ -250,7 +254,7 @@ export const Invoices = () => {
                                 <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{t('invoices.colPaid')}</th>
                                 <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{t('invoices.colDue')}</th>
                                 <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{t('invoices.colStatus')}</th>
-                                <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 500, textAlign: 'right' }}>{t('invoices.colActions')}</th>
+                                {userRole !== 'viewer' && <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 500, textAlign: 'right' }}>{t('invoices.colActions')}</th>}
                             </tr>
                         </thead>
                         <tbody>
@@ -282,26 +286,28 @@ export const Invoices = () => {
                                                 {getStatusText(inv)}
                                             </span>
                                         </td>
-                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                                {parseFloat(inv.paidAmount || 0) < parseFloat(inv.totalAmount || 0) && (
+                                        {userRole !== 'viewer' && (
+                                            <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                    {parseFloat(inv.paidAmount || 0) < parseFloat(inv.totalAmount || 0) && (
+                                                        <button
+                                                            onClick={() => handleOpenPaymentModal(inv)}
+                                                            className="btn-icon"
+                                                            style={{ color: 'var(--success)' }}
+                                                            title={t('invoices.addPayment')}
+                                                        >
+                                                            <DollarSign size={18} />
+                                                        </button>
+                                                    )}
                                                     <button
-                                                        onClick={() => handleOpenPaymentModal(inv)}
-                                                        className="btn-icon"
-                                                        style={{ color: 'var(--success)' }}
-                                                        title={t('invoices.addPayment')}
+                                                        onClick={() => deleteInvoice(inv.id)}
+                                                        className="btn-icon text-danger"
                                                     >
-                                                        <DollarSign size={18} />
+                                                        <Trash2 size={18} />
                                                     </button>
-                                                )}
-                                                <button
-                                                    onClick={() => deleteInvoice(inv.id)}
-                                                    className="btn-icon text-danger"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        </td>
+                                                </div>
+                                            </td>
+                                        )}
                                     </motion.tr>
                                 ))}
                             </AnimatePresence>
@@ -338,7 +344,7 @@ export const Invoices = () => {
                                 <div className="input-group">
                                     <label>{t('invoices.colTotal')} *</label>
                                     <div style={{ position: 'relative' }}>
-                                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>$</span>
+                                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>€</span>
                                         <input
                                             type="number"
                                             required
@@ -398,7 +404,7 @@ export const Invoices = () => {
                                 <div className="input-group">
                                     <label>{t('invoices.paymentAmount')} *</label>
                                     <div style={{ position: 'relative' }}>
-                                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>$</span>
+                                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>€</span>
                                         <input
                                             type="number"
                                             required

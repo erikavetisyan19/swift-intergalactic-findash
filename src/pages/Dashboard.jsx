@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'EUR',
     }).format(amount);
 };
 

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Receipt, FileText, Tags, LogOut, Menu, X, FileSpreadsheet } from 'lucide-react';
+import { LayoutDashboard, Receipt, FileText, Tags, Menu, X, FileSpreadsheet, Users, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
 
 export const Sidebar = () => {
     const { t, i18n } = useTranslation();
+    const { userRole, logout } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
 
     const toggleLanguage = () => {
@@ -18,15 +20,19 @@ export const Sidebar = () => {
         { name: t('sidebar.transactions'), path: '/transactions', icon: <Receipt size={20} /> },
         { name: t('sidebar.invoices'), path: '/invoices', icon: <FileText size={20} /> },
         { name: t('sidebar.spreadsheet'), path: '/spreadsheet', icon: <FileSpreadsheet size={20} /> },
+        { name: t('sidebar.payroll'), path: '/payroll', icon: <Users size={20} /> },
         { name: t('sidebar.categories'), path: '/categories', icon: <Tags size={20} /> },
-    ];
+    ].filter(item => {
+        if (userRole === 'manager') return item.path === '/payroll';
+        return true;
+    });
 
     const SidebarContent = () => (
         <>
             <div style={{ marginBottom: '3rem', padding: '0 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h1 className="text-gradient" style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary)', display: 'grid', placeItems: 'center', color: 'white' }}>
-                        $
+                        €
                     </div>
                     FinDash
                 </h1>
@@ -69,7 +75,7 @@ export const Sidebar = () => {
                 >
                     {i18n.language === 'en' ? '🇧🇬 Български' : '🇺🇸 English'}
                 </button>
-                <button className="btn btn-outline" style={{ width: '100%', justifyContent: 'flex-start', border: 'none', color: 'var(--text-muted)' }}>
+                <button onClick={logout} className="btn btn-outline" style={{ width: '100%', justifyContent: 'flex-start', border: 'none', color: 'var(--text-muted)' }}>
                     <LogOut size={20} />
                     {t('sidebar.signOut')}
                 </button>
