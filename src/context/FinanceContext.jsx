@@ -125,6 +125,88 @@ export const FinanceProvider = ({ children }) => {
 
     const deleteTransaction = async (id) => {
         try {
+            // Find the transaction before deleting to check if it's a payroll transaction
+            const txnToDelete = transactions.find(t => t.id === id);
+
+            if (txnToDelete && txnToDelete.description) {
+                const desc = txnToDelete.description.toLowerCase();
+
+                // Check if it's an advance payment: "Аванс: [Name] за [Month]"
+                if (desc.includes('аванс:')) {
+                    // Extract name and month. Format is usually "Аванс: Employee Name за YYYY-MM (в брой)"
+                    const match = txnToDelete.description.match(/Аванс:\s*(.+?)\s*за\s*(\d{4}-\d{2})/i);
+                    if (match) {
+                        const empName = match[1].trim();
+                        const month = match[2];
+                        const emp = employees.find(e => e.name.toLowerCase() === empName.toLowerCase());
+
+                        if (emp) {
+                            const logToUpdate = timeLogs.find(l => l.employeeId === emp.id && l.month === month);
+                            if (logToUpdate && logToUpdate.advances) {
+                                const deletedAmount = parseFloat(txnToDelete.amount) || 0;
+                                // We need to remove the deleted amount from the advances array
+                                // Since advances are historically tracked as an array of objects { amount },
+                                // we'll find the first advance that matches this amount and remove it,
+                                // or adjust the total by creating a negative compensating entry if not exact match.
+
+                                let newAdvances = [...logToUpdate.advances];
+                                const exactMatchIdx = newAdvances.findIndex(a => Math.abs((parseFloat(a.amount) || 0) - deletedAmount) < 0.01);
+
+                                if (exactMatchIdx !== -1) {
+                                    newAdvances.splice(exactMatchIdx, 1);
+                                } else {
+                                    // Fallback: append a negative advance to balance it out
+                                    newAdvances.push({ amount: -deletedAmount, date: new Date().toISOString() });
+                                }
+
+                                await updateDoc(doc(db, 'timeLogs', logToUpdate.id), { advances: newAdvances });
+                            }
+                        }
+                    }
+                }
+                // Check if it's a full or remaining salary payment
+                else if (desc.includes('пълно изплащане на заплата:') || desc.includes('изплатен остатък от заплата:')) {
+                    const pattern = desc.includes('пълно')
+                        ? /Пълно изплащане на заплата:\s*(.+?)\s*за\s*(\d{4}-\d{2})/i
+                        : /Изплатен остатък от заплата:\s*(.+?)\s*за\s*(\d{4}-\d{2})/i;
+
+                    const match = txnToDelete.description.match(pattern);
+                    if (match) {
+                        const empName = match[1].trim();
+                        const month = match[2];
+                        const emp = employees.find(e => e.name.toLowerCase() === empName.toLowerCase());
+
+                        if (emp) {
+                            const logToUpdate = timeLogs.find(l => l.employeeId === emp.id && l.month === month);
+                            if (logToUpdate) {
+                                await updateDoc(doc(db, 'timeLogs', logToUpdate.id), { isPaid: false });
+                            }
+                        }
+                    }
+                }
+                // Check if it's a refunded advance adjustment
+                else if (desc.includes('възстановен аванс:')) {
+                    const match = txnToDelete.description.match(/Възстановен аванс:\s*(.+)/i);
+                    // Without the explicit month in the description, we must assume current month or find the latest log
+                    if (match) {
+                        const empName = match[1].trim();
+                        const emp = employees.find(e => e.name.toLowerCase() === empName.toLowerCase());
+
+                        if (emp) {
+                            // Find the most recent timeLog for this employee since month isn't explicitly in this description
+                            const latestLog = timeLogs.filter(l => l.employeeId === emp.id).sort((a, b) => b.month.localeCompare(a.month))[0];
+                            if (latestLog) {
+                                let newAdvances = [...(latestLog.advances || [])];
+                                // We are deleting a "refund", so we add the advance BACK to them
+                                const amountToAddBack = parseFloat(txnToDelete.amount) || 0;
+                                newAdvances.push({ amount: amountToAddBack, date: new Date().toISOString() });
+                                await updateDoc(doc(db, 'timeLogs', latestLog.id), { advances: newAdvances });
+                            }
+                        }
+                    }
+                }
+            }
+
             await deleteDoc(doc(db, 'transactions', id));
         } catch (e) {
             console.error("Error deleting document: ", e);

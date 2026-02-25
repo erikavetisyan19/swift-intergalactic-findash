@@ -360,18 +360,24 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                                                                 const method = emp.paymentMethod || 'cash';
                                                                 const methodText = method === 'bank' ? 'по банка' : 'в брой';
 
-                                                                const transactionDate = new Date().toISOString().startsWith(selectedMonth)
-                                                                    ? new Date().toISOString().split('T')[0]
-                                                                    : `${selectedMonth}-01`;
+                                                                if (relatedTxns.length > 0) {
+                                                                    const mostRecentTxn = relatedTxns[0];
+                                                                    const currentAmt = parseFloat(mostRecentTxn.amount) || 0;
+                                                                    updateTransaction(mostRecentTxn.id, { amount: (currentAmt + diff).toFixed(2) });
+                                                                } else {
+                                                                    const transactionDate = new Date().toISOString().startsWith(selectedMonth)
+                                                                        ? new Date().toISOString().split('T')[0]
+                                                                        : `${selectedMonth}-01`;
 
-                                                                addTransaction({
-                                                                    date: transactionDate,
-                                                                    type: 'expense',
-                                                                    category: emp.role || 'ДРУГИ РАСХОДИ',
-                                                                    amount: diff.toFixed(2),
-                                                                    description: `Аванс: ${emp.name} за ${selectedMonth} (${methodText})`,
-                                                                    paymentMethod: method
-                                                                });
+                                                                    addTransaction({
+                                                                        date: transactionDate,
+                                                                        type: 'expense',
+                                                                        category: emp.role || 'ДРУГИ РАСХОДИ',
+                                                                        amount: diff.toFixed(2),
+                                                                        description: `Аванс: ${emp.name} за ${selectedMonth} (${methodText})`,
+                                                                        paymentMethod: method
+                                                                    });
+                                                                }
                                                             }
                                                         }
 
