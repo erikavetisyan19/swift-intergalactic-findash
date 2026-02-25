@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { Plus, Search, Trash2, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Plus, Search, Trash2, ArrowUpRight, ArrowDownRight, Edit2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
@@ -10,7 +10,7 @@ const formatCurrency = (amount) => {
 };
 
 export const Transactions = () => {
-    const { transactions, deleteTransaction, addTransaction, categories } = useFinance();
+    const { transactions, deleteTransaction, addTransaction, updateTransaction, categories } = useFinance();
     const { userRole } = useAuth();
     const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = useState('');
@@ -21,7 +21,8 @@ export const Transactions = () => {
 
     const translateCategory = (cat) => t('categoryNames', { returnObjects: true })[cat] || cat;
 
-    // New Transaction Form State
+    // New/Edit Transaction Form State
+    const [editingId, setEditingId] = useState(null);
     const [type, setType] = useState('expense');
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState(categories.expense[0]);
@@ -49,20 +50,49 @@ export const Transactions = () => {
         e.preventDefault();
         if (!amount) return;
 
-        addTransaction({
+        const payload = {
             type,
             amount: parseFloat(amount),
             category,
             date,
             description,
             paymentMethod
-        });
+        };
+
+        if (editingId) {
+            updateTransaction(editingId, payload);
+        } else {
+            addTransaction(payload);
+        }
 
         setIsModalOpen(false);
         // Reset form
+        setEditingId(null);
         setAmount('');
         setDescription('');
         setPaymentMethod('cash');
+    };
+
+    const openEditModal = (txn) => {
+        setEditingId(txn.id);
+        setType(txn.type);
+        setAmount(txn.amount);
+        setCategory(txn.category);
+        setDate(txn.date);
+        setDescription(txn.description);
+        setPaymentMethod(txn.paymentMethod || 'cash');
+        setIsModalOpen(true);
+    };
+
+    const handleOpenCreateModal = () => {
+        setEditingId(null);
+        setType('expense');
+        setAmount('');
+        setCategory(categories.expense[0] || '');
+        setDate(new Date().toISOString().split('T')[0]);
+        setDescription('');
+        setPaymentMethod('cash');
+        setIsModalOpen(true);
     };
 
     return (
@@ -73,7 +103,7 @@ export const Transactions = () => {
                     <p className="page-subtitle">{t('transactions.subtitle')}</p>
                 </div>
                 {userRole !== 'viewer' && (
-                    <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}>
+                    <button className="btn btn-primary" onClick={handleOpenCreateModal}>
                         <Plus size={18} />
                         {t('transactions.addTransaction')}
                     </button>
@@ -209,9 +239,14 @@ export const Transactions = () => {
                                         </td>
                                         {userRole !== 'viewer' && (
                                             <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                                <button className="btn-icon" onClick={() => deleteTransaction(txn.id)} title="Delete">
-                                                    <Trash2 size={18} />
-                                                </button>
+                                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                    <button className="btn-icon" onClick={() => openEditModal(txn)} title="Edit">
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button className="btn-icon" onClick={() => deleteTransaction(txn.id)} title="Delete">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         )}
                                     </tr>
@@ -243,34 +278,24 @@ export const Transactions = () => {
                             className="glass-panel"
                             style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}
                         >
-                            <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>{t('transactions.addNewTitle')}</h2>
+                            <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>
+                                {editingId ? 'Редактиране' : t('transactions.addNewTitle')}
+                            </h2>
 
                             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
                                 <button
                                     type="button"
+                                    className={`btn ${type === 'expense' ? 'btn-primary' : ''}`}
+                                    style={{ flex: 1, background: type === 'expense' ? 'var(--danger)' : 'transparent', border: type !== 'expense' ? '1px solid var(--panel-border)' : 'none' }}
                                     onClick={() => { setType('expense'); setCategory(categories.expense[0]); }}
-                                    style={{
-                                        flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-sm)', fontWeight: 500, cursor: 'pointer',
-                                        border: '1px solid',
-                                        borderColor: type === 'expense' ? 'var(--danger)' : 'var(--panel-border)',
-                                        background: type === 'expense' ? 'var(--danger-bg)' : 'transparent',
-                                        color: type === 'expense' ? 'var(--danger)' : 'var(--text-secondary)',
-                                        transition: 'var(--transition)'
-                                    }}
                                 >
                                     {t('transactions.expense')}
                                 </button>
                                 <button
                                     type="button"
+                                    className={`btn ${type === 'income' ? 'btn-primary' : ''}`}
+                                    style={{ flex: 1, background: type === 'income' ? 'var(--success)' : 'transparent', border: type !== 'income' ? '1px solid var(--panel-border)' : 'none' }}
                                     onClick={() => { setType('income'); setCategory(categories.income[0]); }}
-                                    style={{
-                                        flex: 1, padding: '0.75rem', borderRadius: 'var(--radius-sm)', fontWeight: 500, cursor: 'pointer',
-                                        border: '1px solid',
-                                        borderColor: type === 'income' ? 'var(--success)' : 'var(--panel-border)',
-                                        background: type === 'income' ? 'var(--success-bg)' : 'transparent',
-                                        color: type === 'income' ? 'var(--success)' : 'var(--text-secondary)',
-                                        transition: 'var(--transition)'
-                                    }}
                                 >
                                     {t('transactions.income')}
                                 </button>
@@ -327,6 +352,6 @@ export const Transactions = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { Plus, Search, Trash2, DollarSign, Camera } from 'lucide-react';
+import { Plus, Search, Trash2, DollarSign, Camera, Edit2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import Tesseract from 'tesseract.js';
@@ -11,7 +11,7 @@ const formatCurrency = (amount) => {
 };
 
 export const Invoices = () => {
-    const { invoices, addInvoice, updateInvoice, deleteInvoice, addTransaction } = useFinance();
+    const { invoices, addInvoice, updateInvoice, deleteInvoice, addTransaction, transactions, updateTransaction, deleteTransaction } = useFinance();
     const { userRole } = useAuth();
     const { t } = useTranslation();
     const [searchTerm, setSearchTerm] = useState('');
@@ -21,9 +21,11 @@ export const Invoices = () => {
     const [isScanning, setIsScanning] = useState(false);
     const [scanProgress, setScanProgress] = useState('');
 
-    // Create Invoice State
+    // Create/Edit Invoice State
+    const [editingInvoiceId, setEditingInvoiceId] = useState(null);
     const [clientName, setClientName] = useState('');
     const [totalAmount, setTotalAmount] = useState('');
+    const [paidAmount, setPaidAmount] = useState('');
     const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
     const [description, setDescription] = useState('');
 
@@ -106,20 +108,91 @@ export const Invoices = () => {
         e.preventDefault();
         if (!clientName || !totalAmount) return;
 
-        addInvoice({
+        const payload = {
             clientName,
             totalAmount: parseFloat(totalAmount),
-            paidAmount: 0,
             dueDate,
-            description,
-            createdAt: new Date().toISOString()
-        });
+            description
+        };
+
+        if (editingInvoiceId) {
+            const oldPaid = invoices.find(i => i.id === editingInvoiceId)?.paidAmount || 0;
+            payload.paidAmount = paidAmount !== '' ? parseFloat(paidAmount) : 0;
+            const diff = parseFloat((payload.paidAmount - oldPaid).toFixed(2));
+
+            if (diff !== 0) {
+                const relatedTxns = transactions.filter(t => t.type === 'income' && (t.description || '').toLowerCase().includes(clientName.toLowerCase())).sort((a, b) => new Date(b.date) - new Date(a.date));
+                let remainingDiff = diff;
+
+                if (remainingDiff < 0) {
+                    let toRemove = Math.abs(remainingDiff);
+                    for (let txn of relatedTxns) {
+                        if (toRemove <= 0) break;
+                        const txnAmt = parseFloat(txn.amount) || 0;
+                        if (txnAmt <= toRemove) {
+                            deleteTransaction(txn.id);
+                            toRemove = parseFloat((toRemove - txnAmt).toFixed(2));
+                        } else {
+                            updateTransaction(txn.id, { amount: (txnAmt - toRemove).toFixed(2) });
+                            toRemove = 0;
+                        }
+                    }
+                    if (toRemove > 0) {
+                        addTransaction({
+                            type: 'expense',
+                            amount: toRemove.toFixed(2),
+                            category: 'Корекция',
+                            date: new Date().toISOString().split('T')[0],
+                            description: `Корекция (намалено плащане): ${clientName}`,
+                            paymentMethod: 'cash'
+                        });
+                    }
+                } else {
+                    addTransaction({
+                        type: 'income',
+                        amount: remainingDiff.toFixed(2),
+                        category: 'Плащания',
+                        date: new Date().toISOString().split('T')[0],
+                        description: `${t('invoices.paymentFor')} ${clientName}`,
+                        paymentMethod: 'cash'
+                    });
+                }
+            }
+
+            updateInvoice(editingInvoiceId, payload);
+        } else {
+            payload.paidAmount = 0;
+            payload.createdAt = new Date().toISOString();
+            addInvoice(payload);
+        }
 
         setIsCreateModalOpen(false);
+        setEditingInvoiceId(null);
         setClientName('');
         setTotalAmount('');
+        setPaidAmount('');
         setDescription('');
         setDueDate(new Date().toISOString().split('T')[0]);
+    };
+
+    const handleOpenEditModal = (inv) => {
+        setEditingInvoiceId(inv.id);
+        setClientName(inv.clientName);
+        setTotalAmount(inv.totalAmount.toString());
+        setPaidAmount((inv.paidAmount || 0).toString());
+        setDueDate(inv.dueDate || new Date().toISOString().split('T')[0]);
+        setDescription(inv.description || '');
+        setIsCreateModalOpen(true);
+    };
+
+    const handleOpenCreateModal = () => {
+        setEditingInvoiceId(null);
+        setClientName('');
+        setTotalAmount('');
+        setPaidAmount('');
+        setDueDate(new Date().toISOString().split('T')[0]);
+        setDescription('');
+        setIsCreateModalOpen(true);
     };
 
     const handleOpenPaymentModal = (invoice) => {
@@ -215,7 +288,7 @@ export const Invoices = () => {
                                 {isScanning ? scanProgress : t('invoices.scanInvoice')}
                             </label>
                         </div>
-                        <button className="btn btn-primary" onClick={() => setIsCreateModalOpen(true)}>
+                        <button className="btn btn-primary" onClick={handleOpenCreateModal}>
                             <Plus size={20} />
                             {t('invoices.addInvoice')}
                         </button>
@@ -300,6 +373,13 @@ export const Invoices = () => {
                                                         </button>
                                                     )}
                                                     <button
+                                                        onClick={() => handleOpenEditModal(inv)}
+                                                        className="btn-icon"
+                                                        title="Редактиране"
+                                                    >
+                                                        <Edit2 size={18} />
+                                                    </button>
+                                                    <button
                                                         onClick={() => deleteInvoice(inv.id)}
                                                         className="btn-icon text-danger"
                                                     >
@@ -333,7 +413,9 @@ export const Invoices = () => {
                             style={{ padding: '2rem', width: '100%', maxWidth: '500px' }}
                             onClick={e => e.stopPropagation()}
                         >
-                            <h2 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>{t('invoices.addInvoice')}</h2>
+                            <h2 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>
+                                {editingInvoiceId ? 'Редактиране на Фактура' : t('invoices.addInvoice')}
+                            </h2>
                             <form onSubmit={handleAddInvoice} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
                                 <div className="input-group">
@@ -358,6 +440,24 @@ export const Invoices = () => {
                                     </div>
                                 </div>
 
+                                {editingInvoiceId && (
+                                    <div className="input-group">
+                                        <label>{t('invoices.colPaid')}</label>
+                                        <div style={{ position: 'relative' }}>
+                                            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>€</span>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={paidAmount}
+                                                onChange={(e) => setPaidAmount(e.target.value)}
+                                                style={{ paddingLeft: '2rem' }}
+                                                className="filter-input"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="input-group">
                                     <label>{t('invoices.colDue')}</label>
                                     <input type="date" required value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="filter-input" />
@@ -373,7 +473,7 @@ export const Invoices = () => {
                                         {t('transactions.cancel')}
                                     </button>
                                     <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                                        {t('invoices.saveInvoice')}
+                                        {editingInvoiceId ? 'Запази' : t('invoices.saveInvoice')}
                                     </button>
                                 </div>
                             </form>

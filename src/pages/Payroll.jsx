@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
-import { Users, Clock, Calculator, Plus, Trash2, Edit2, Save, Send } from 'lucide-react';
+import { Users, Clock, Calculator, Plus, Trash2, Edit2, Save, Send, Check, X, Calendar } from 'lucide-react';
 import { FinanceContext } from '../context/FinanceContext';
 import { doc, updateDoc, addDoc, collection } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -23,33 +23,32 @@ export const Payroll = () => {
             </div>
 
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--panel-border)', paddingBottom: '1rem', marginBottom: '2rem', overflowX: 'auto' }}>
-                <button
-                    className={`btn ${activeTab === 'time' ? 'btn-primary' : ''}`}
-                    onClick={() => setActiveTab('time')}
-                    style={{ background: activeTab !== 'time' ? 'transparent' : '', border: activeTab !== 'time' ? '1px solid var(--panel-border)' : '' }}
-                >
-                    <Clock size={18} />
-                    {t('payroll.timeTracking')}
-                </button>
-                {userRole !== 'manager' && (
+            <div style={{ marginBottom: '2rem' }}>
+                <div className="segment-control" style={{ maxWidth: '100%', flexWrap: 'wrap' }}>
                     <button
-                        className={`btn ${activeTab === 'salary' ? 'btn-primary' : ''}`}
-                        onClick={() => setActiveTab('salary')}
-                        style={{ background: activeTab !== 'salary' ? 'transparent' : '', border: activeTab !== 'salary' ? '1px solid var(--panel-border)' : '' }}
+                        className={`segment-btn ${activeTab === 'time' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('time')}
                     >
-                        <Calculator size={18} />
-                        {t('payroll.salaryCalc')}
+                        <Clock size={16} />
+                        {t('payroll.timeTracking')}
                     </button>
-                )}
-                <button
-                    className={`btn ${activeTab === 'employees' ? 'btn-primary' : ''}`}
-                    onClick={() => setActiveTab('employees')}
-                    style={{ background: activeTab !== 'employees' ? 'transparent' : '', border: activeTab !== 'employees' ? '1px solid var(--panel-border)' : '' }}
-                >
-                    <Users size={18} />
-                    {t('payroll.employees')}
-                </button>
+                    {userRole !== 'manager' && (
+                        <button
+                            className={`segment-btn ${activeTab === 'salary' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('salary')}
+                        >
+                            <Calculator size={16} />
+                            {t('payroll.salaryCalc')}
+                        </button>
+                    )}
+                    <button
+                        className={`segment-btn ${activeTab === 'employees' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('employees')}
+                    >
+                        <Users size={16} />
+                        {t('payroll.employees')}
+                    </button>
+                </div>
             </div>
 
             <AnimatePresence mode="wait">
@@ -61,7 +60,7 @@ export const Payroll = () => {
                     transition={{ duration: 0.2 }}
                 >
                     {activeTab === 'time' && <TimeTrackingTab employees={employees} timeLogs={timeLogs} addTimeLog={addTimeLog} t={t} />}
-                    {activeTab === 'salary' && userRole !== 'manager' && <SalaryTab employees={employees} timeLogs={timeLogs} t={t} />}
+                    {activeTab === 'salary' && <SalaryTab employees={employees} timeLogs={timeLogs} t={t} />}
                     {activeTab === 'employees' && <EmployeesTab employees={employees} addEmployee={addEmployee} updateEmployee={updateEmployee} deleteEmployee={deleteEmployee} t={t} />}
                 </motion.div>
             </AnimatePresence>
@@ -125,16 +124,15 @@ const TimeTrackingTab = ({ employees, timeLogs, addTimeLog, t }) => {
                 <div>
                     <input
                         type="month"
-                        className="input"
+                        className="modern-calendar"
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(e.target.value)}
-                        style={{ background: 'var(--bg-lighter)' }}
                     />
                 </div>
             </div>
 
             <div className="table-container" style={{ overflowX: 'auto', paddingBottom: '1rem', border: '1px solid var(--panel-border)', borderRadius: 'var(--radius-md)' }}>
-                <table className="table" style={{ whiteSpace: 'nowrap', minWidth: 'max-content', margin: 0 }}>
+                <table className="table payroll-grid time-tracking-table" style={{ whiteSpace: 'nowrap', minWidth: 'max-content', margin: 0 }}>
                     <thead>
                         <tr>
                             <th style={{ position: 'sticky', left: 0, zIndex: 10, background: 'var(--panel-bg)', minWidth: '150px' }}>ИМЕНАТА</th>
@@ -219,12 +217,16 @@ const TimeTrackingTab = ({ employees, timeLogs, addTimeLog, t }) => {
 };
 
 const SalaryTab = ({ employees, timeLogs, t }) => {
-    const { addTransaction, updateTransaction, transactions } = useContext(FinanceContext);
+    const { userRole } = useAuth();
+    const { addTransaction, updateTransaction, deleteTransaction, transactions, updateEmployee } = useContext(FinanceContext);
     const today = new Date();
     const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
     const [selectedMonth, setSelectedMonth] = useState(currentMonth);
-    const [paymentMethod, setPaymentMethod] = useState('по банка');
-    const [isGenerating, setIsGenerating] = useState(false);
+    const [processingId, setProcessingId] = useState(null);
+    const [advanceModeId, setAdvanceModeId] = useState(null);
+    const [advanceAmount, setAdvanceAmount] = useState('');
+    const [editAdvanceModeId, setEditAdvanceModeId] = useState(null);
+    const [editAdvanceAmount, setEditAdvanceAmount] = useState('');
 
     let grandTotal = 0;
 
@@ -238,132 +240,334 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                 <div>
                     <input
                         type="month"
-                        className="input"
+                        className="modern-calendar"
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(e.target.value)}
-                        style={{ background: 'var(--bg-lighter)' }}
                     />
                 </div>
             </div>
 
-            <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', alignItems: 'center' }}>
-                <select
-                    className="input"
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    style={{ background: 'var(--bg-lighter)', width: 'auto', padding: '0.5rem 1rem' }}
-                >
-                    <option value="по банка">По банка</option>
-                    <option value="в брой">В брой</option>
-                </select>
-                <button
-                    className="btn btn-primary"
-                    onClick={async () => {
-                        setIsGenerating(true);
-                        try {
-                            const expensesByCategory = {};
-                            let totalProcessedSalary = 0;
-                            employees.forEach(emp => {
-                                if (!emp.role) return;
-
-                                const currentLog = timeLogs.find(l => l.employeeId === emp.id && l.month === selectedMonth) || {};
-                                const dailyHours = currentLog.dailyHours || {};
-
-                                const totalHours = Object.values(dailyHours).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
-
-                                let salary = 0;
-                                if (emp.hourlyRate) salary = totalHours * emp.hourlyRate;
-
-                                if (salary > 0) {
-                                    expensesByCategory[emp.role] = (expensesByCategory[emp.role] || 0) + salary;
-                                    totalProcessedSalary += salary;
-                                }
-                            });
-
-                            let totalExpensesCreated = 0;
-                            let totalExpensesUpdated = 0;
-                            const baseDescription = `Обобщени заплати за ${selectedMonth}`;
-                            const descriptionLabel = `${baseDescription} (${paymentMethod})`;
-
-                            for (const [category, amount] of Object.entries(expensesByCategory)) {
-                                const existingTx = transactions.find(t => t.type === 'expense' && t.category === category && t.description && t.description.startsWith(baseDescription));
-
-                                if (existingTx) {
-                                    await updateTransaction(existingTx.id, {
-                                        amount: amount.toFixed(2),
-                                        description: descriptionLabel,
-                                        paymentMethod: paymentMethod === 'по банка' ? 'bank' : 'cash'
-                                    });
-                                    totalExpensesUpdated++;
-                                } else {
-                                    await addTransaction({
-                                        date: new Date().toISOString().split('T')[0],
-                                        type: 'expense',
-                                        category: category,
-                                        amount: amount.toFixed(2),
-                                        description: descriptionLabel,
-                                        paymentMethod: paymentMethod === 'по банка' ? 'bank' : 'cash'
-                                    });
-                                    totalExpensesCreated++;
-                                }
-                            }
-
-                            if (totalExpensesCreated > 0 || totalExpensesUpdated > 0) {
-                                alert(`Успешно обработени разходи за месец ${selectedMonth} (Нови: ${totalExpensesCreated}, Актуализирани: ${totalExpensesUpdated}, Общо: ${totalProcessedSalary.toFixed(2)} €).`);
-                            } else {
-                                alert('Внимание: 0 генерирани разходи! Проверете дали в "Отработени Дни/Часове" (Time Tracking) има въведени часове за този месец и дали има зададена "Ставка на Час".');
-                            }
-                        } catch (error) {
-                            console.error("Error generating expenses:", error);
-                            alert("Възникна грешка при генерирането на разходи: " + error.message);
-                        }
-                        setIsGenerating(false);
-                    }}
-                    disabled={isGenerating || employees.length === 0}
-                >
-                    <Send size={18} />
-                    {isGenerating ? 'Обработка...' : 'Изплати Заплати & Създай Разходи'}
-                </button>
-            </div>
-
             <div className="table-container">
-                <table className="table">
+                <table className="table payroll-grid salary-table">
                     <thead>
                         <tr>
                             <th>Служител</th>
+                            <th>Начин</th>
                             <th>Отработени Дни/Часове</th>
                             <th>Ставка</th>
-                            <th style={{ textAlign: 'right' }}>Общо за Плащане</th>
+                            <th style={{ textAlign: 'right' }}>Аванси</th>
+                            <th style={{ textAlign: 'right' }}>Остатък за Плащане</th>
+                            <th style={{ textAlign: 'right' }}>Действия</th>
                         </tr>
                     </thead>
                     <tbody>
                         {employees.map(emp => {
                             const currentLog = timeLogs.find(l => l.employeeId === emp.id && l.month === selectedMonth) || {};
                             const dailyHours = currentLog.dailyHours || {};
+                            const advances = currentLog.advances || [];
+                            const isPaid = currentLog.isPaid === true;
+
+                            const totalAdvances = advances.reduce((sum, advance) => sum + (parseFloat(advance.amount) || 0), 0);
 
                             const totalHours = Object.values(dailyHours).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
                             const totalDays = Object.values(dailyHours).filter(val => (parseFloat(val) || 0) > 0).length;
 
                             let finalSalary = 0;
-                            let calculationText = '-';
 
                             if (emp.hourlyRate) {
                                 finalSalary = totalHours * emp.hourlyRate;
-                                calculationText = `${totalHours} ч. × ${emp.hourlyRate.toFixed(2)} €`;
+                            } else if (emp.dailyRate) {
+                                finalSalary = totalDays * emp.dailyRate;
                             }
 
-                            grandTotal += finalSalary;
+                            const remainingSalary = finalSalary > 0 ? Math.max(0, finalSalary - totalAdvances) : 0;
+
+                            grandTotal += remainingSalary;
 
                             return (
                                 <tr key={emp.id}>
-                                    <td>
+                                    <td data-label="Служител">
                                         <strong>{emp.name}</strong><br />
                                         <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{emp.role}</span>
                                     </td>
-                                    <td>{`${totalHours} часове`}</td>
-                                    <td>{emp.hourlyRate ? `${emp.hourlyRate.toFixed(2)} €/ч` : '-'}</td>
-                                    <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--primary-color)' }}>
-                                        {finalSalary.toFixed(2)} €
+                                    <td style={{ padding: '0.25rem' }} data-label="Начин">
+                                        <select
+                                            value={emp.paymentMethod || 'cash'}
+                                            onChange={(e) => updateEmployee(emp.id, { paymentMethod: e.target.value })}
+                                            style={{
+                                                background: 'transparent',
+                                                border: '1px solid var(--panel-border)',
+                                                color: 'var(--text-primary)',
+                                                padding: '0.25rem',
+                                                borderRadius: 'var(--radius-sm)',
+                                                width: '100%',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            <option value="cash" style={{ background: 'var(--bg-dark)' }}>В брой</option>
+                                            <option value="bank" style={{ background: 'var(--bg-dark)' }}>По банка</option>
+                                        </select>
+                                    </td>
+                                    <td style={{ textAlign: 'center' }} data-label="Дни/Часове">{`${totalHours} ч.`}</td>
+                                    <td style={{ textAlign: 'center' }} data-label="Ставка">
+                                        {emp.hourlyRate ? `${emp.hourlyRate.toFixed(2)} €/ч` : (emp.dailyRate ? `${emp.dailyRate.toFixed(2)} €/ден` : '-')}
+                                    </td>
+                                    <td style={{ textAlign: 'right' }} data-label="Аванси">
+                                        {editAdvanceModeId === emp.id ? (
+                                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                <input
+                                                    type="number"
+                                                    value={editAdvanceAmount}
+                                                    onChange={(e) => setEditAdvanceAmount(e.target.value)}
+                                                    style={{ width: '80px', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--panel-border)', background: 'var(--bg-dark)', color: 'white', fontSize: '0.8rem' }}
+                                                    autoFocus
+                                                />
+                                                <button className="btn btn-primary" style={{ padding: '0.35rem' }} onClick={async () => {
+                                                    const amt = parseFloat(editAdvanceAmount.replace(',', '.'));
+                                                    if (isNaN(amt) || amt < 0) return alert('Невалидна сума.');
+
+                                                    try {
+                                                        const diff = parseFloat((amt - totalAdvances).toFixed(2));
+                                                        if (diff !== 0) {
+                                                            const relatedTxns = transactions.filter(t => t.type === 'expense' && (t.description || '').toLowerCase().includes(emp.name.toLowerCase()) && (t.description || '').toLowerCase().includes('аванс') && (t.description || '').toLowerCase().includes(selectedMonth.toLowerCase())).sort((a, b) => new Date(b.date) - new Date(a.date));
+                                                            if (diff < 0) {
+                                                                let toRemove = Math.abs(diff);
+                                                                for (let txn of relatedTxns) {
+                                                                    if (toRemove <= 0) break;
+                                                                    const txnAmt = parseFloat(txn.amount) || 0;
+                                                                    if (txnAmt <= toRemove) {
+                                                                        deleteTransaction(txn.id);
+                                                                        toRemove = parseFloat((toRemove - txnAmt).toFixed(2));
+                                                                    } else {
+                                                                        updateTransaction(txn.id, { amount: (txnAmt - toRemove).toFixed(2) });
+                                                                        toRemove = 0;
+                                                                    }
+                                                                }
+                                                                if (toRemove > 0) {
+                                                                    const transactionDate = new Date().toISOString().startsWith(selectedMonth)
+                                                                        ? new Date().toISOString().split('T')[0]
+                                                                        : `${selectedMonth}-01`;
+                                                                    addTransaction({
+                                                                        date: transactionDate,
+                                                                        type: 'income',
+                                                                        category: 'Корекция',
+                                                                        amount: toRemove.toFixed(2),
+                                                                        description: `Възстановен аванс: ${emp.name}`,
+                                                                        paymentMethod: 'cash'
+                                                                    });
+                                                                }
+                                                            } else {
+                                                                const method = emp.paymentMethod || 'cash';
+                                                                const methodText = method === 'bank' ? 'по банка' : 'в брой';
+
+                                                                const transactionDate = new Date().toISOString().startsWith(selectedMonth)
+                                                                    ? new Date().toISOString().split('T')[0]
+                                                                    : `${selectedMonth}-01`;
+
+                                                                addTransaction({
+                                                                    date: transactionDate,
+                                                                    type: 'expense',
+                                                                    category: emp.role || 'ДРУГИ РАСХОДИ',
+                                                                    amount: diff.toFixed(2),
+                                                                    description: `Аванс: ${emp.name} за ${selectedMonth} (${methodText})`,
+                                                                    paymentMethod: method
+                                                                });
+                                                            }
+                                                        }
+
+                                                        let newAdvances = amt > 0 ? [{ amount: amt, date: new Date().toISOString() }] : [];
+                                                        if (currentLog.id) {
+                                                            await updateDoc(doc(db, 'timeLogs', currentLog.id), { advances: newAdvances });
+                                                        } else if (amt > 0) {
+                                                            await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, advances: newAdvances });
+                                                        }
+                                                        setEditAdvanceModeId(null);
+                                                    } catch (err) { alert(err.message); }
+                                                }}><Check size={14} /></button>
+                                                <button className="btn btn-outline" style={{ padding: '0.35rem' }} onClick={() => setEditAdvanceModeId(null)}><X size={14} /></button>
+                                            </div>
+                                        ) : (
+                                            totalAdvances > 0 ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                                    <span style={{
+                                                        background: 'rgba(239, 68, 68, 0.1)',
+                                                        color: 'var(--warning-color)',
+                                                        padding: '0.25rem 0.75rem',
+                                                        borderRadius: '999px',
+                                                        fontWeight: 'bold',
+                                                        display: 'inline-block'
+                                                    }}>
+                                                        - {totalAdvances.toFixed(2)} €
+                                                    </span>
+                                                    {userRole !== 'viewer' && (
+                                                        <button className="btn-icon" onClick={() => { setEditAdvanceModeId(emp.id); setEditAdvanceAmount(totalAdvances.toString()); }} title="Редактиране" style={{ padding: '0.25rem' }}>
+                                                            <Edit2 size={14} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span style={{ color: 'var(--text-secondary)' }}>-</span>
+                                            )
+                                        )}
+                                    </td>
+                                    <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.1rem', color: isPaid ? 'var(--text-muted)' : 'var(--primary-color)' }} data-label="Остатък">
+                                        {isPaid ? <span style={{ color: 'var(--success-color)', fontSize: '0.9rem' }}>Изплатено</span> : `${remainingSalary.toFixed(2)} €`}
+                                    </td>
+                                    <td style={{ textAlign: 'right' }} data-label="Действия">
+                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', opacity: processingId === emp.id ? 0.5 : 1, pointerEvents: processingId === emp.id ? 'none' : 'auto' }}>
+                                            {advanceModeId === emp.id ? (
+                                                <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                                    <input
+                                                        type="number"
+                                                        value={advanceAmount}
+                                                        onChange={(e) => setAdvanceAmount(e.target.value)}
+                                                        placeholder="Сума €"
+                                                        style={{ width: '80px', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--panel-border)', background: 'var(--bg-dark)', color: 'white', fontSize: '0.8rem' }}
+                                                        autoFocus
+                                                    />
+                                                    <button
+                                                        className="btn btn-primary"
+                                                        style={{ padding: '0.35rem' }}
+                                                        onClick={async () => {
+                                                            const amt = parseFloat(advanceAmount.replace(',', '.'));
+                                                            if (isNaN(amt) || amt <= 0) return alert('Невалидна сума.');
+                                                            if (amt > remainingSalary && remainingSalary > 0) return alert(`Сумата надвишава остатъка от ${remainingSalary.toFixed(2)} €`);
+
+                                                            setProcessingId(emp.id);
+                                                            try {
+                                                                const method = emp.paymentMethod || 'cash';
+                                                                const methodText = method === 'bank' ? 'по банка' : 'в брой';
+                                                                const desc = `Аванс: ${emp.name} за ${selectedMonth} (${methodText})`;
+
+                                                                // Use the currently selected month and a valid day (01) instead of today's exact date so that the transaction appears correctly in the selected month's ledger.
+                                                                const transactionDate = new Date().toISOString().startsWith(selectedMonth)
+                                                                    ? new Date().toISOString().split('T')[0]
+                                                                    : `${selectedMonth}-01`;
+
+                                                                await addTransaction({
+                                                                    date: transactionDate,
+                                                                    type: 'expense',
+                                                                    category: emp.role || 'ДРУГИ РАСХОДИ',
+                                                                    amount: amt.toFixed(2),
+                                                                    description: desc,
+                                                                    paymentMethod: method
+                                                                });
+
+                                                                let newAdvances = [...advances];
+                                                                newAdvances.push({ amount: amt, date: new Date().toISOString() });
+
+                                                                if (currentLog.id) {
+                                                                    await updateDoc(doc(db, 'timeLogs', currentLog.id), { advances: newAdvances });
+                                                                } else {
+                                                                    await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, advances: newAdvances });
+                                                                }
+                                                                setAdvanceModeId(null);
+                                                                setAdvanceAmount('');
+                                                            } catch (err) {
+                                                                alert("Грешка при запазване: " + err.message);
+                                                            }
+                                                            setProcessingId(null);
+                                                        }}
+                                                    >
+                                                        <Check size={14} />
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-outline"
+                                                        style={{ padding: '0.35rem' }}
+                                                        onClick={() => { setAdvanceModeId(null); setAdvanceAmount(''); }}
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        className="btn btn-outline"
+                                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                                                        disabled={isPaid}
+                                                        onClick={() => { setAdvanceModeId(emp.id); setAdvanceAmount(''); }}
+                                                    >
+                                                        Аванс
+                                                    </button>
+                                                    {isPaid ? (
+                                                        <button
+                                                            className="btn btn-outline"
+                                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', borderColor: 'orange', color: 'orange' }}
+                                                            onClick={async () => {
+                                                                if (!window.confirm(`Отмени плащането за ${emp.name} за ${selectedMonth}? Това също ще изтрие транзакцията за заплата.`)) return;
+                                                                setProcessingId(emp.id);
+                                                                try {
+                                                                    const relatedTxns = transactions.filter(t =>
+                                                                        t.type === 'expense' &&
+                                                                        (t.description || '').toLowerCase().includes(emp.name.toLowerCase()) &&
+                                                                        (t.description || '').toLowerCase().includes(selectedMonth.toLowerCase()) &&
+                                                                        (t.description || '').toLowerCase().includes('заплата')
+                                                                    );
+                                                                    for (let txn of relatedTxns) {
+                                                                        deleteTransaction(txn.id);
+                                                                    }
+
+                                                                    if (currentLog.id) {
+                                                                        await updateDoc(doc(db, 'timeLogs', currentLog.id), { isPaid: false });
+                                                                    }
+                                                                } catch (err) {
+                                                                    alert("Грешка при запазване: " + err.message);
+                                                                }
+                                                                setProcessingId(null);
+                                                            }}
+                                                        >
+                                                            Отмени
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            className="btn btn-primary"
+                                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                                                            disabled={remainingSalary < 0}
+                                                            onClick={async () => {
+                                                                const method = emp.paymentMethod || 'cash';
+                                                                const methodText = method === 'bank' ? 'по банка' : 'в брой';
+                                                                const confirmMsg = totalAdvances > 0
+                                                                    ? `Потвърдете изплащането на остатъка от ${remainingSalary.toFixed(2)} € за ${emp.name}?`
+                                                                    : `Пълно изплащане на заплата: ${emp.name} за ${selectedMonth} (${methodText})`;
+                                                                if (!window.confirm(confirmMsg)) return;
+                                                                setProcessingId(emp.id);
+                                                                try {
+                                                                    const desc = totalAdvances > 0
+                                                                        ? `Изплатен остатък от заплата: ${emp.name} за ${selectedMonth} (${methodText})`
+                                                                        : `Пълно изплащане на заплата: ${emp.name} за ${selectedMonth} (${methodText})`;
+
+                                                                    if (remainingSalary > 0) {
+                                                                        const transactionDate = new Date().toISOString().startsWith(selectedMonth)
+                                                                            ? new Date().toISOString().split('T')[0]
+                                                                            : `${selectedMonth}-01`;
+
+                                                                        await addTransaction({
+                                                                            date: transactionDate,
+                                                                            type: 'expense',
+                                                                            category: emp.role || 'ДРУГИ РАСХОДИ',
+                                                                            amount: remainingSalary.toFixed(2),
+                                                                            description: desc,
+                                                                            paymentMethod: method
+                                                                        });
+                                                                    }
+
+                                                                    if (currentLog.id) {
+                                                                        await updateDoc(doc(db, 'timeLogs', currentLog.id), { isPaid: true });
+                                                                    } else {
+                                                                        await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, isPaid: true });
+                                                                    }
+                                                                } catch (err) {
+                                                                    alert("Грешка при запазване: " + err.message);
+                                                                }
+                                                                setProcessingId(null);
+                                                            }}
+                                                        >
+                                                            Изплати
+                                                        </button>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             );
@@ -379,10 +583,11 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                     {employees.length > 0 && (
                         <tfoot>
                             <tr>
-                                <td colSpan="3" style={{ textAlign: 'right', fontWeight: 'bold' }}>Общо задължения за месеца:</td>
+                                <td colSpan="5" style={{ textAlign: 'right', fontWeight: 'bold' }}>Общо остатъчни задължения (месец):</td>
                                 <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--success-color)' }}>
                                     {grandTotal.toFixed(2)} €
                                 </td>
+                                <td></td>
                             </tr>
                         </tfoot>
                     )}
@@ -396,7 +601,7 @@ const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, 
     const { userRole } = useAuth();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [formData, setFormData] = useState({ name: '', role: '', hourlyRate: '' });
+    const [formData, setFormData] = useState({ name: '', role: '', hourlyRate: '', dailyRate: '', paymentMethod: 'cash' });
 
     const roleOptions = [
         "ЗАПЛАТА УПРАВИТЕЛИИ, ОФИС И ВОДИТЕЛЬ",
@@ -414,7 +619,9 @@ const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, 
         const payload = {
             name: formData.name,
             role: formData.role,
-            hourlyRate: parseFloat(formData.hourlyRate) || 0
+            hourlyRate: parseFloat(formData.hourlyRate) || 0,
+            dailyRate: parseFloat(formData.dailyRate) || 0,
+            paymentMethod: formData.paymentMethod || 'cash'
         };
 
         if (editingId) {
@@ -424,14 +631,16 @@ const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, 
             addEmployee(payload);
             setIsAdding(false);
         }
-        setFormData({ name: '', role: '', hourlyRate: '' });
+        setFormData({ name: '', role: '', hourlyRate: '', dailyRate: '', paymentMethod: 'cash' });
     };
 
     const handleEdit = (emp) => {
         setFormData({
             name: emp.name,
             role: emp.role || '',
-            hourlyRate: emp.hourlyRate || ''
+            hourlyRate: emp.hourlyRate || '',
+            dailyRate: emp.dailyRate || '',
+            paymentMethod: emp.paymentMethod || 'cash'
         });
         setEditingId(emp.id);
         setIsAdding(true);
@@ -440,7 +649,7 @@ const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, 
     const handleCancel = () => {
         setIsAdding(false);
         setEditingId(null);
-        setFormData({ name: '', role: '', hourlyRate: '' });
+        setFormData({ name: '', role: '', hourlyRate: '', dailyRate: '', paymentMethod: 'cash' });
     };
 
     return (
@@ -465,18 +674,18 @@ const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, 
                     style={{ background: 'var(--bg-lighter)', padding: '1.5rem', borderRadius: 'var(--radius-md)', marginBottom: '2rem', border: '1px solid var(--panel-border)' }}
                 >
                     <h3 style={{ marginBottom: '1rem' }}>{editingId ? 'Редактиране' : 'Нов служител'}</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Име</label>
-                            <input type="text" className="input" placeholder="Иван Иванов" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                        <div className="input-group">
+                            <label>Име на служител</label>
+                            <input type="text" className="filter-input" placeholder="Напр. Иван Иванов" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} style={{ padding: '0.6rem 1rem' }} />
                         </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Категория Заплата</label>
+                        <div className="input-group">
+                            <label>Категория Заплата</label>
                             <select
-                                className="input"
+                                className="filter-input"
                                 value={formData.role}
                                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                style={{ background: 'var(--bg-lighter)', width: '100%' }}
+                                style={{ width: '100%', padding: '0.6rem 1rem' }}
                             >
                                 <option value="">Изберете категория...</option>
                                 {roleOptions.map(option => (
@@ -484,11 +693,35 @@ const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, 
                                 ))}
                             </select>
                         </div>
+                        <div className="input-group">
+                            <label>Метод на плащане</label>
+                            <select
+                                className="filter-input"
+                                value={formData.paymentMethod}
+                                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+                                style={{ width: '100%', padding: '0.6rem 1rem' }}
+                            >
+                                <option value="cash">В брой</option>
+                                <option value="bank">По банка</option>
+                            </select>
+                        </div>
                         {userRole === 'admin' && (
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Ставка на Час (€)</label>
-                                <input type="number" step="0.01" className="input" placeholder="0.00" value={formData.hourlyRate} onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value })} />
-                            </div>
+                            <>
+                                <div className="input-group">
+                                    <label>Ставка на Час (€)</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>€</span>
+                                        <input type="number" step="0.01" className="filter-input" placeholder="0.00" value={formData.hourlyRate} onChange={(e) => setFormData({ ...formData, hourlyRate: e.target.value })} style={{ paddingLeft: '2rem' }} />
+                                    </div>
+                                </div>
+                                <div className="input-group">
+                                    <label>Ставка за Ден (€)</label>
+                                    <div style={{ position: 'relative' }}>
+                                        <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>€</span>
+                                        <input type="number" step="0.01" className="filter-input" placeholder="0.00" value={formData.dailyRate} onChange={(e) => setFormData({ ...formData, dailyRate: e.target.value })} style={{ paddingLeft: '2rem' }} />
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
@@ -499,23 +732,25 @@ const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, 
             )}
 
             <div className="table-container">
-                <table className="table">
+                <table className="table payroll-grid employees-table">
                     <thead>
                         <tr>
                             <th style={{ padding: '0.5rem' }}>Име</th>
                             <th style={{ padding: '0.5rem' }}>Длъжност</th>
                             {userRole === 'admin' && <th style={{ padding: '0.5rem' }}>Ставка / Час</th>}
+                            {userRole === 'admin' && <th style={{ padding: '0.5rem' }}>Ставка / Ден</th>}
                             {userRole !== 'viewer' && <th style={{ textAlign: 'right', padding: '0.5rem' }}>Действия</th>}
                         </tr>
                     </thead>
                     <tbody>
                         {employees.map(emp => (
                             <tr key={emp.id}>
-                                <td style={{ padding: '0.5rem' }}><strong>{emp.name}</strong></td>
-                                <td style={{ padding: '0.5rem' }}>{emp.role || '-'}</td>
-                                {userRole === 'admin' && <td style={{ padding: '0.5rem' }}>{emp.hourlyRate ? `${emp.hourlyRate.toFixed(2)} €` : '-'}</td>}
+                                <td style={{ padding: '0.5rem' }} data-label="Име"><strong>{emp.name}</strong></td>
+                                <td style={{ padding: '0.5rem' }} data-label="Длъжност">{emp.role || '-'}</td>
+                                {userRole === 'admin' && <td style={{ padding: '0.5rem' }} data-label="Ставка / Час">{emp.hourlyRate ? `${emp.hourlyRate.toFixed(2)} €` : '-'}</td>}
+                                {userRole === 'admin' && <td style={{ padding: '0.5rem' }} data-label="Ставка / Ден">{emp.dailyRate ? `${emp.dailyRate.toFixed(2)} €` : '-'}</td>}
                                 {userRole !== 'viewer' && (
-                                    <td style={{ padding: '0.5rem' }}>
+                                    <td style={{ padding: '0.5rem' }} data-label="Действия">
                                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
                                             <button className="icon-btn" onClick={() => handleEdit(emp)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)' }}>
                                                 <Edit2 size={16} />
