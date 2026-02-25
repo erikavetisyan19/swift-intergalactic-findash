@@ -9,14 +9,14 @@ export const Spreadsheet = () => {
     // The embed URL goes here. We'll set a placeholder for now until the user provides one.
     // Example Google Sheets: 'https://docs.google.com/spreadsheets/d/e/.../pubhtml?widget=true&headers=false'
     // Example Microsoft Excel: 'https://onedrive.live.com/embed?resid=...&authkey=...&em=2&wdAllowInteractivity=False&wdHideGridlines=True&wdHideHeaders=True&wdDownloadButton=True&wdInConfigurator=True'
-    const embedUrl = ''; // Default empty
+    const embedUrl = 'https://docs.google.com/spreadsheets/d/11Xe0dJCS4CUelDH41TvYLPfpcDD9Ws6MyE9KDdjZBe4/edit?rm=minimal';
 
     return (
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 150px)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                 <div>
-                    <h1 className="text-gradient" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{t('spreadsheet.title')}</h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>{t('spreadsheet.subtitle')}</p>
+                    <h1 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '0' }}>{t('spreadsheet.title')}</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{t('spreadsheet.subtitle')}</p>
                 </div>
             </div>
 
