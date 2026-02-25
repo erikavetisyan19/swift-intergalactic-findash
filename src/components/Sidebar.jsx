@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Receipt, Tags, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Receipt, FileText, Tags, LogOut, Menu, X, FileSpreadsheet } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
@@ -16,6 +16,8 @@ export const Sidebar = () => {
     const navItems = [
         { name: t('sidebar.dashboard'), path: '/', icon: <LayoutDashboard size={20} /> },
         { name: t('sidebar.transactions'), path: '/transactions', icon: <Receipt size={20} /> },
+        { name: t('sidebar.invoices'), path: '/invoices', icon: <FileText size={20} /> },
+        { name: t('sidebar.spreadsheet'), path: '/spreadsheet', icon: <FileSpreadsheet size={20} /> },
         { name: t('sidebar.categories'), path: '/categories', icon: <Tags size={20} /> },
     ];
 

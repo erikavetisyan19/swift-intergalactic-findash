@@ -1,11 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { collection, query, onSnapshot, addDoc, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, deleteDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const FinanceContext = createContext();
 
 export const FinanceProvider = ({ children }) => {
-    const [transactions, setTransactions] = useState([]);
     const newCategoriesList = [
         "РЕЦЕПЦИЯ БРОЙ", "РЕЦЕПЦИЯ БЕЗ КЛОК-ПРИЯТЕЛИ", "РЕСТОРАНТ ИЗХРАНВАНЕ", "ОБОРОТ БАР ТЕРИТОРИЯ", "ФИТНЕС",
         "УБОРКА ДОП.АПАРТАМЕНТИ", "ПРАНЕ", "ПРАЗНО", "ОСИГУРОВКИ", "ИЗТЕГЛЕНИ", "ТОК", "ВОДА", "ТЕЛЕНОР", "ИНТЕРНЕТ",
@@ -23,6 +22,8 @@ export const FinanceProvider = ({ children }) => {
     // Ensure array values are unique
     const uniqueCategories = [...new Set(newCategoriesList)];
 
+    const [transactions, setTransactions] = useState([]);
+    const [invoices, setInvoices] = useState([]);
     const [categories, setCategories] = useState({
         income: uniqueCategories,
         expense: uniqueCategories
@@ -60,9 +61,19 @@ export const FinanceProvider = ({ children }) => {
             setLoading(false);
         });
 
+        // 3. Sync Invoices
+        const unsubInvoices = onSnapshot(collection(db, 'invoices'), (querySnapshot) => {
+            const invoicesArray = [];
+            querySnapshot.forEach((doc) => {
+                invoicesArray.push({ id: doc.id, ...doc.data() });
+            });
+            setInvoices(invoicesArray.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate)));
+        });
+
         return () => {
             unsubscribeTransactions();
             unsubCategories();
+            unsubInvoices();
         };
     }, []); // Run once on mount
 
@@ -101,6 +112,32 @@ export const FinanceProvider = ({ children }) => {
         await setDoc(doc(db, 'settings', 'categories'), newCategories);
     };
 
+    const addInvoice = async (invoice) => {
+        try {
+            await addDoc(collection(db, 'invoices'), invoice);
+        } catch (e) {
+            console.error("Error adding invoice: ", e);
+            alert("Failed to save invoice: " + e.message);
+        }
+    };
+
+    const updateInvoice = async (id, updatedData) => {
+        try {
+            await updateDoc(doc(db, 'invoices', id), updatedData);
+        } catch (e) {
+            console.error("Error updating invoice: ", e);
+            alert("Failed to update invoice: " + e.message);
+        }
+    };
+
+    const deleteInvoice = async (id) => {
+        try {
+            await deleteDoc(doc(db, 'invoices', id));
+        } catch (e) {
+            console.error("Error deleting invoice: ", e);
+        }
+    };
+
     // Helper selectors
     const totalIncome = transactions
         .filter(t => t.type === 'income')
@@ -116,10 +153,14 @@ export const FinanceProvider = ({ children }) => {
         <FinanceContext.Provider value={{
             transactions,
             categories,
+            invoices,
             addTransaction,
             deleteTransaction,
             addCategory,
             deleteCategory,
+            addInvoice,
+            updateInvoice,
+            deleteInvoice,
             totalIncome,
             totalExpense,
             netProfit

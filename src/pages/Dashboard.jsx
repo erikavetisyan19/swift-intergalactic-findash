@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { TrendingUp, TrendingDown, DollarSign, Activity, Wallet, Building } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Activity, Wallet, Building, FileText } from 'lucide-react';
 import { AreaChart, Area, BarChart, Bar, Legend, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useTranslation } from 'react-i18next';
 
@@ -13,7 +13,7 @@ const formatCurrency = (amount) => {
 };
 
 export const Dashboard = () => {
-    const { transactions } = useFinance();
+    const { transactions, invoices } = useFinance();
     const { t } = useTranslation();
     const [filterType, setFilterType] = useState('all'); // 'all', 'date', 'month', 'year'
     const [filterValue, setFilterValue] = useState('');
@@ -40,6 +40,15 @@ export const Dashboard = () => {
             .filter(t => t.paymentMethod === 'cash' || !t.paymentMethod) // Default to cash for legacy items
             .reduce((sum, t) => t.type === 'income' ? sum + parseFloat(t.amount) : sum - parseFloat(t.amount), 0);
     }, [filteredTransactions]);
+
+    const accountsReceivable = useMemo(() => {
+        if (!invoices) return 0;
+        return invoices.reduce((sum, inv) => {
+            const total = parseFloat(inv.totalAmount) || 0;
+            const paid = parseFloat(inv.paidAmount) || 0;
+            return sum + (total - paid);
+        }, 0);
+    }, [invoices]);
 
     const bankBalance = useMemo(() => {
         return filteredTransactions
@@ -173,6 +182,22 @@ export const Dashboard = () => {
                     </div>
                     <div style={{ position: 'absolute', bottom: '-20px', right: '-20px', opacity: 0.05, transform: 'scale(2)' }}>
                         <DollarSign size={100} />
+                    </div>
+                </div>
+
+                {/* Accounts Receivable */}
+                <div className="glass-panel" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <div>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem' }}>{t('dashboard.accountsReceivable')}</p>
+                            <h2 style={{ fontSize: '2rem', color: 'var(--text-primary)' }}>{formatCurrency(accountsReceivable)}</h2>
+                        </div>
+                        <div style={{ padding: '0.75rem', borderRadius: 'var(--radius-md)', background: 'rgba(56, 189, 248, 0.1)', color: '#38bdf8' }}>
+                            <FileText size={24} />
+                        </div>
+                    </div>
+                    <div style={{ position: 'absolute', bottom: '-20px', right: '-20px', opacity: 0.05, transform: 'scale(2)' }}>
+                        <FileText size={100} />
                     </div>
                 </div>
 

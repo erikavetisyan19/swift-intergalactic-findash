@@ -9,6 +9,8 @@ const resources = {
                 dashboard: "Dashboard",
                 transactions: "Transactions",
                 categories: "Categories",
+                invoices: "Invoices",
+                spreadsheet: "Spreadsheet",
                 signOut: "Sign Out"
             },
             dashboard: {
@@ -18,6 +20,7 @@ const resources = {
                 totalIncome: "Total Income",
                 totalExpenses: "Total Expenses",
                 netProfit: "Net Profit",
+                accountsReceivable: "Accounts Receivable",
                 cashBalance: "Cash Balance",
                 bankBalance: "Bank Balance",
                 cashFlowTrend: "Cash Flow Trend",
@@ -54,6 +57,12 @@ const resources = {
                 cash: "Cash",
                 bank: "Bank Transfer"
             },
+            spreadsheet: {
+                title: "Live Spreadsheet",
+                subtitle: "View and edit your external data instantly",
+                noLinkTitle: "No Spreadsheet Linked",
+                noLinkDesc: "We haven't connected your live document yet. Please provide the embed link to display your Excel or Google Sheets document here."
+            },
             categories: {
                 title: "Categories",
                 subtitle: "Customize how you track your money",
@@ -61,6 +70,31 @@ const resources = {
                 expenseCategories: "Expense Categories",
                 addIncome: "Add new income category...",
                 addExpense: "Add new expense category..."
+            },
+            invoices: {
+                title: "Invoices",
+                subtitle: "Track clients and outstanding balances",
+                addInvoice: "Add Invoice",
+                search: "Search invoices...",
+                colClient: "Client Name",
+                colTotal: "Total Amount",
+                colPaid: "Paid",
+                colDue: "Date",
+                colStatus: "Status",
+                colActions: "Actions",
+                statusPaid: "Paid",
+                statusPartial: "Partial",
+                statusUnpaid: "Unpaid",
+                addPayment: "Add Payment",
+                description: "Description",
+                saveInvoice: "Save Invoice",
+                paymentAmount: "Payment Amount",
+                savePayment: "Save Payment",
+                paymentMethod: "Payment Method",
+                paymentFor: "Payment for Invoice:",
+                scanInvoice: "Scan Invoice",
+                scanProgress: "Scanning document... Please wait.",
+                scanError: "Failed to scan document: "
             },
             categoryNames: {
                 "Consulting": "Consulting",
@@ -135,6 +169,8 @@ const resources = {
                 dashboard: "Табло",
                 transactions: "Транзакции",
                 categories: "Категории",
+                invoices: "Фактури",
+                spreadsheet: "Електронна таблица",
                 signOut: "Изход"
             },
             dashboard: {
@@ -144,6 +180,7 @@ const resources = {
                 totalIncome: "Общи приходи",
                 totalExpenses: "Общи разходи",
                 netProfit: "Нетна печалба",
+                accountsReceivable: "Неплатени фактури",
                 cashBalance: "Каса в брой",
                 bankBalance: "по банка",
                 cashFlowTrend: "Тренд на паричните потоци",
@@ -180,6 +217,12 @@ const resources = {
                 cash: "в брой",
                 bank: "по банка"
             },
+            spreadsheet: {
+                title: "Електронна таблица",
+                subtitle: "Преглеждайте и редактирайте вашите външни данни директно",
+                noLinkTitle: "Няма свързана таблица",
+                noLinkDesc: "Все още не сме свързали вашият документ. Моля, предоставете връзката за вграждане, за да покажем вашия Excel или Google Sheets документ тук."
+            },
             categories: {
                 title: "Категории",
                 subtitle: "Персонализирайте как проследявате парите си",
@@ -187,6 +230,31 @@ const resources = {
                 expenseCategories: "Категории разходи",
                 addIncome: "Добави нова категория приход...",
                 addExpense: "Добави нова категория разход..."
+            },
+            invoices: {
+                title: "Фактури",
+                subtitle: "Проследявайте клиенти и неплатени салда",
+                addInvoice: "Добавяне на фактура",
+                search: "Търсене на фактури...",
+                colClient: "Име на клиент",
+                colTotal: "Обща сума",
+                colPaid: "Платено",
+                colDue: "Дата",
+                colStatus: "Статус",
+                colActions: "Действия",
+                statusPaid: "Платена",
+                statusPartial: "Частична",
+                statusUnpaid: "Неплатена",
+                addPayment: "Добавяне на плащане",
+                description: "Описание",
+                saveInvoice: "Запазване на фактура",
+                paymentAmount: "Сума за плащане",
+                savePayment: "Запазване на плащане",
+                paymentMethod: "Начин на плащане",
+                paymentFor: "Плащане по фактура:",
+                scanInvoice: "Сканирай фактура",
+                scanProgress: "Сканиране на документа... Моля, изчакайте.",
+                scanError: "Неуспешно сканиране: "
             },
             categoryNames: {
                 "Consulting": "Консултиране",

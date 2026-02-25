@@ -178,7 +178,11 @@ export const Transactions = () => {
                                                     {txn.type === 'income' ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
                                                 </div>
                                                 <div>
-                                                    <p style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{txn.description}</p>
+                                                    <p style={{ fontWeight: 500, color: 'var(--text-primary)' }}>
+                                                        {txn.description.startsWith('Payment for Invoice:')
+                                                            ? txn.description.replace('Payment for Invoice:', t('invoices.paymentFor'))
+                                                            : txn.description}
+                                                    </p>
                                                     <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{txn.id.substring(0, 8)}</p>
                                                 </div>
                                             </div>
