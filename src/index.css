@@ -516,6 +516,7 @@ h6 {
 .payroll-grid {
   border-collapse: collapse;
   width: 100%;
+  table-layout: fixed;
 }
 
 .payroll-grid th,

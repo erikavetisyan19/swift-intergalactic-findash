@@ -333,6 +333,7 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                                                             padding: '0.25rem',
                                                             borderRadius: 'var(--radius-sm)',
                                                             width: '100%',
+                                                            maxWidth: '120px',
                                                             cursor: 'pointer'
                                                         }}
                                                     >
