@@ -257,14 +257,14 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                 <table className="table payroll-grid salary-table">
                     <thead>
                         <tr>
-                            <th>Служител</th>
-                            <th>Начин</th>
-                            <th>Отработени Дни/Часове</th>
-                            <th style={{ textAlign: 'center' }}>Ставка</th>
-                            <th style={{ textAlign: 'right' }}>Пътни</th>
-                            <th style={{ textAlign: 'right' }}>Аванси</th>
-                            {userRole === 'admin' && <th style={{ textAlign: 'right' }}>Остатък за Плащане</th>}
-                            <th style={{ textAlign: 'right' }}>Действия</th>
+                            <th style={{ width: '20%' }}>Служител</th>
+                            <th style={{ width: '12%' }}>Начин</th>
+                            <th style={{ width: '18%' }}>Отработени Дни/Часове</th>
+                            <th style={{ width: '10%', textAlign: 'center' }}>Ставка</th>
+                            <th style={{ width: '10%', textAlign: 'right' }}>Пътни</th>
+                            <th style={{ width: '10%', textAlign: 'right' }}>Аванси</th>
+                            {userRole === 'admin' && <th style={{ width: '10%', textAlign: 'right' }}>Остатък за Плащане</th>}
+                            <th style={{ width: '10%', textAlign: 'right' }}>Действия</th>
                         </tr>
                     </thead>
                     <tbody>
