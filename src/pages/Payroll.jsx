@@ -227,6 +227,8 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
     const [advanceAmount, setAdvanceAmount] = useState('');
     const [editAdvanceModeId, setEditAdvanceModeId] = useState(null);
     const [editAdvanceAmount, setEditAdvanceAmount] = useState('');
+    const [travelExpenseModeId, setTravelExpenseModeId] = useState(null);
+    const [travelExpenseAmount, setTravelExpenseAmount] = useState('');
 
     let grandTotal = 0;
 
@@ -255,6 +257,7 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                             <th>Начин</th>
                             <th>Отработени Дни/Часове</th>
                             <th style={{ textAlign: 'center' }}>Ставка</th>
+                            <th style={{ textAlign: 'right' }}>Пътни</th>
                             <th style={{ textAlign: 'right' }}>Аванси</th>
                             {userRole === 'admin' && <th style={{ textAlign: 'right' }}>Остатък за Плащане</th>}
                             <th style={{ textAlign: 'right' }}>Действия</th>
@@ -269,17 +272,21 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
 
                             const totalAdvances = advances.reduce((sum, advance) => sum + (parseFloat(advance.amount) || 0), 0);
 
+                            const travels = currentLog.travelExpenses || [];
+                            const totalTravels = travels.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+
                             const totalHours = Object.values(dailyHours).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
                             const totalDays = Object.values(dailyHours).filter(val => (parseFloat(val) || 0) > 0).length;
 
-                            let finalSalary = 0;
+                            let baseSalary = 0;
 
                             if (emp.hourlyRate) {
-                                finalSalary = totalHours * emp.hourlyRate;
+                                baseSalary = totalHours * emp.hourlyRate;
                             } else if (emp.dailyRate) {
-                                finalSalary = totalDays * emp.dailyRate;
+                                baseSalary = totalDays * emp.dailyRate;
                             }
 
+                            const finalSalary = baseSalary + totalTravels;
                             const remainingSalary = finalSalary > 0 ? Math.max(0, finalSalary - totalAdvances) : 0;
 
                             grandTotal += remainingSalary;
@@ -311,6 +318,45 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                                     <td style={{ textAlign: 'center' }} data-label="Дни/Часове">{`${totalHours} ч.`}</td>
                                     <td style={{ textAlign: 'center' }} data-label="Ставка">
                                         {userRole === 'admin' ? (emp.hourlyRate ? `${emp.hourlyRate.toFixed(2)} €/ч` : (emp.dailyRate ? `${emp.dailyRate.toFixed(2)} €/ден` : '-')) : '***'}
+                                    </td>
+                                    <td style={{ textAlign: 'right' }} data-label="Пътни">
+                                        {travelExpenseModeId === emp.id ? (
+                                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                <input
+                                                    type="number"
+                                                    value={travelExpenseAmount}
+                                                    onChange={(e) => setTravelExpenseAmount(e.target.value)}
+                                                    placeholder="Сума €"
+                                                    style={{ width: '70px', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--panel-border)', background: 'var(--bg-dark)', color: 'white', fontSize: '0.8rem' }}
+                                                    autoFocus
+                                                />
+                                                <button className="btn btn-primary" style={{ padding: '0.35rem' }} onClick={async () => {
+                                                    const amt = parseFloat(travelExpenseAmount.replace(',', '.'));
+                                                    if (isNaN(amt) || amt < 0) return alert('Невалидна сума.');
+                                                    try {
+                                                        let newTravels = [{ amount: amt, date: new Date().toISOString() }];
+                                                        if (currentLog.id) {
+                                                            await updateDoc(doc(db, 'timeLogs', currentLog.id), { travelExpenses: newTravels });
+                                                        } else {
+                                                            await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, travelExpenses: newTravels });
+                                                        }
+                                                        setTravelExpenseModeId(null);
+                                                    } catch (err) { alert(err.message); }
+                                                }}><Check size={14} /></button>
+                                                <button className="btn btn-outline" style={{ padding: '0.35rem' }} onClick={() => setTravelExpenseModeId(null)}><X size={14} /></button>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                                {totalTravels > 0 ? (
+                                                    <span style={{ color: 'var(--success-color)', fontWeight: 'bold' }}>+ {totalTravels.toFixed(2)} €</span>
+                                                ) : <span style={{ color: 'var(--text-secondary)' }}>-</span>}
+                                                {userRole !== 'viewer' && !isPaid && (
+                                                    <button className="icon-btn" onClick={() => { setTravelExpenseModeId(emp.id); setTravelExpenseAmount(totalTravels > 0 ? totalTravels.toString() : ''); }} title="Добави Пътни" style={{ padding: '0.25rem', color: 'var(--primary-color)' }}>
+                                                        <Plus size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
                                     </td>
                                     <td style={{ textAlign: 'right' }} data-label="Аванси">
                                         {editAdvanceModeId === emp.id ? (
@@ -531,31 +577,40 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                                                             <button
                                                                 className="btn btn-primary"
                                                                 style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
-                                                                disabled={remainingSalary < 0}
+                                                                disabled={remainingSalary <= 0 && totalTravels === 0}
                                                                 onClick={async () => {
                                                                     const method = emp.paymentMethod || 'cash';
                                                                     const methodText = method === 'bank' ? 'по банка' : 'в брой';
-                                                                    const confirmMsg = totalAdvances > 0
-                                                                        ? `Потвърдете изплащането на остатъка от ${remainingSalary.toFixed(2)} € за ${emp.name}?`
-                                                                        : `Пълно изплащане на заплата: ${emp.name} за ${selectedMonth} (${methodText})`;
+                                                                    const confirmMsg = `Изплащане: ${emp.name} за ${selectedMonth}\nОстатък Заплата: ${(remainingSalary - totalTravels).toFixed(2)} €\nПътни: ${totalTravels.toFixed(2)} €\nОБЩО: ${remainingSalary.toFixed(2)} €`;
                                                                     if (!window.confirm(confirmMsg)) return;
                                                                     setProcessingId(emp.id);
                                                                     try {
-                                                                        const desc = totalAdvances > 0
-                                                                            ? `Изплатен остатък от заплата: ${emp.name} за ${selectedMonth} (${methodText})`
-                                                                            : `Пълно изплащане на заплата: ${emp.name} за ${selectedMonth} (${methodText})`;
+                                                                        const transactionDate = new Date().toISOString().startsWith(selectedMonth)
+                                                                            ? new Date().toISOString().split('T')[0]
+                                                                            : `${selectedMonth}-01`;
 
-                                                                        if (remainingSalary > 0) {
-                                                                            const transactionDate = new Date().toISOString().startsWith(selectedMonth)
-                                                                                ? new Date().toISOString().split('T')[0]
-                                                                                : `${selectedMonth}-01`;
+                                                                        const pureSalary = remainingSalary - totalTravels;
 
+                                                                        // Transaction 1: Pure Salary Remaining
+                                                                        if (pureSalary > 0) {
                                                                             await addTransaction({
                                                                                 date: transactionDate,
                                                                                 type: 'expense',
                                                                                 category: emp.role || 'ДРУГИ РАСХОДИ',
-                                                                                amount: remainingSalary.toFixed(2),
-                                                                                description: desc,
+                                                                                amount: pureSalary.toFixed(2),
+                                                                                description: `Изплатен остатък от заплата: ${emp.name} за ${selectedMonth} (${methodText})`,
+                                                                                paymentMethod: method
+                                                                            });
+                                                                        }
+
+                                                                        // Transaction 2: Travel Expenses
+                                                                        if (totalTravels > 0) {
+                                                                            await addTransaction({
+                                                                                date: transactionDate,
+                                                                                type: 'expense',
+                                                                                category: 'ПЪТНИ РАЗХОДИ',
+                                                                                amount: totalTravels.toFixed(2),
+                                                                                description: `Изплатени пътни разходи: ${emp.name} за ${selectedMonth} (${methodText})`,
                                                                                 paymentMethod: method
                                                                             });
                                                                         }
