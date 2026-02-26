@@ -318,7 +318,7 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
 
                                         return (
                                             <tr key={emp.id}>
-                                                <td data-label="Служител">
+                                                <td data-label="Служител" style={{ padding: '0.75rem' }}>
                                                     <strong>{emp.name}</strong><br />
                                                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{emp.role}</span>
                                                 </td>
@@ -376,8 +376,20 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                                                                 <span style={{ color: 'var(--success-color)', fontWeight: 'bold' }}>+ {totalTravels.toFixed(2)} €</span>
                                                             ) : <span style={{ color: 'var(--text-secondary)' }}>-</span>}
                                                             {userRole !== 'viewer' && !isPaid && (
-                                                                <button className="btn-icon" onClick={() => { setTravelExpenseModeId(emp.id); setTravelExpenseAmount(totalTravels > 0 ? totalTravels.toString() : ''); }} title="Добави Пътни" style={{ padding: '0.25rem' }}>
-                                                                    <Plus size={14} />
+                                                                <button
+                                                                    className="btn btn-outline"
+                                                                    onClick={() => { setTravelExpenseModeId(emp.id); setTravelExpenseAmount(totalTravels > 0 ? totalTravels.toString() : ''); }}
+                                                                    title="Добави Пътни"
+                                                                    style={{
+                                                                        padding: '0.25rem 0.5rem',
+                                                                        borderColor: 'var(--primary)',
+                                                                        color: 'var(--primary)',
+                                                                        display: 'inline-flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center'
+                                                                    }}
+                                                                >
+                                                                    <Plus size={16} strokeWidth={2.5} />
                                                                 </button>
                                                             )}
                                                         </div>
