@@ -516,7 +516,12 @@ h6 {
 .payroll-grid {
   border-collapse: collapse;
   width: 100%;
-  table-layout: fixed;
+}
+
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .payroll-grid th,
