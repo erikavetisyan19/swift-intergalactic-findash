@@ -270,7 +270,7 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                     <tbody>
                         {employees.length === 0 ? (
                             <tr>
-                                <td colSpan={userRole === 'admin' ? 7 : (userRole === 'viewer' ? 4 : 6)} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+                                <td colSpan={userRole === 'admin' ? 8 : 7} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
                                     Няма данни.
                                 </td>
                             </tr>
@@ -285,7 +285,7 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                             ).map(([role, roleEmployees]) => (
                                 <React.Fragment key={role}>
                                     <tr>
-                                        <td colSpan={userRole === 'admin' ? 7 : (userRole === 'viewer' ? 4 : 6)} style={{ background: 'var(--panel-bg)', fontWeight: 'bold', color: 'var(--primary-color)', padding: '0.75rem 1rem', borderTop: '2px solid var(--panel-border)', borderBottom: '2px solid var(--panel-border)' }}>
+                                        <td colSpan={userRole === 'admin' ? 8 : 7} style={{ background: 'var(--panel-bg)', fontWeight: 'bold', color: 'var(--primary-color)', padding: '0.75rem 1rem', borderTop: '2px solid var(--panel-border)', borderBottom: '2px solid var(--panel-border)' }}>
                                             {role}
                                         </td>
                                     </tr>
@@ -670,7 +670,7 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                         employees.length > 0 && userRole === 'admin' && (
                             <tfoot>
                                 <tr>
-                                    <td colSpan="4" style={{ textAlign: 'right', fontWeight: 'bold' }}>Общо остатъчни задължения (месец):</td>
+                                    <td colSpan="6" style={{ textAlign: 'right', fontWeight: 'bold' }}>Общо остатъчни задължения (месец):</td>
                                     <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--success-color)' }}>
                                         {grandTotal.toFixed(2)} €
                                     </td>
