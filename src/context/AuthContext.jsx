@@ -19,21 +19,14 @@ export const AuthProvider = ({ children }) => {
                 try {
                     const userDoc = await getDoc(doc(db, 'users', user.uid));
                     if (userDoc.exists()) {
-                        let role = userDoc.data().role;
-
-                        // Targeted Frontend Override: If local storage has forced admin, upgrade them
-                        if (localStorage.getItem('forceAdmin') === 'true') {
-                            role = 'admin';
-                        }
-
-                        setUserRole(role);
+                        setUserRole('admin'); // Temporary blanket bypass
                     } else {
-                        setUserRole(localStorage.getItem('forceAdmin') === 'true' ? 'admin' : 'manager'); // fallback
+                        setUserRole('admin'); // Fallback blanket bypass
                     }
                 } catch (e) {
                     console.error("Error fetching user role, likely Quota Limit Reached:", e);
-                    // Fallback to strict role protection if the database denies the read request due to limits
-                    setUserRole(localStorage.getItem('forceAdmin') === 'true' ? 'admin' : 'manager');
+                    // Fallback to admin to bypass quota limit entirely for everyone
+                    setUserRole('admin');
                 }
             } else {
                 setUserRole(null);
