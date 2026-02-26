@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { collection, query, onSnapshot, addDoc, deleteDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, deleteDoc, doc, setDoc, updateDoc, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export const FinanceContext = createContext();
@@ -40,9 +40,9 @@ export const FinanceProvider = ({ children }) => {
 
     // Sync Data with Firestore
     useEffect(() => {
-        // 1. Sync Transactions
-        const q = query(collection(db, 'transactions'));
-        const unsubscribeTransactions = onSnapshot(q, (querySnapshot) => {
+        // 1. Sync Transactions (Limited to recent to save reads)
+        const qTransactions = query(collection(db, 'transactions'), orderBy('date', 'desc'), limit(400));
+        const unsubscribeTransactions = onSnapshot(qTransactions, (querySnapshot) => {
             const transArray = [];
             querySnapshot.forEach((doc) => {
                 transArray.push({ id: doc.id, ...doc.data() });
@@ -68,8 +68,9 @@ export const FinanceProvider = ({ children }) => {
             setLoading(false);
         });
 
-        // 3. Sync Invoices
-        const unsubInvoices = onSnapshot(collection(db, 'invoices'), (querySnapshot) => {
+        // 3. Sync Invoices (Limited to recent)
+        const qInvoices = query(collection(db, 'invoices'), orderBy('dueDate', 'desc'), limit(100));
+        const unsubInvoices = onSnapshot(qInvoices, (querySnapshot) => {
             const invoicesArray = [];
             querySnapshot.forEach((doc) => {
                 invoicesArray.push({ id: doc.id, ...doc.data() });
@@ -86,8 +87,9 @@ export const FinanceProvider = ({ children }) => {
             setEmployees(employeesArray.sort((a, b) => (a.name || '').localeCompare(b.name || '')));
         });
 
-        // 5. Sync TimeLogs
-        const unsubTimeLogs = onSnapshot(collection(db, 'timeLogs'), (querySnapshot) => {
+        // 5. Sync TimeLogs (Limited to recent months)
+        const qTimeLogs = query(collection(db, 'timeLogs'), orderBy('month', 'desc'), limit(300));
+        const unsubTimeLogs = onSnapshot(qTimeLogs, (querySnapshot) => {
             const timeLogsArray = [];
             querySnapshot.forEach((doc) => {
                 timeLogsArray.push({ id: doc.id, ...doc.data() });

@@ -144,61 +144,65 @@ const TimeTrackingTab = ({ employees, timeLogs, addTimeLog, t }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {employees.map((emp, index) => {
-                            const currentLog = timeLogs.find(l => l.employeeId === emp.id && l.month === selectedMonth) || {};
-                            const dailyHours = currentLog.dailyHours || {};
-                            const totalHours = Object.values(dailyHours).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
-
-                            const bgVar = index % 2 === 0 ? 'var(--panel-bg)' : 'var(--bg-darker)';
-
-                            return (
-                                <tr key={emp.id} style={{ background: bgVar }}>
-                                    <td style={{ position: 'sticky', left: 0, zIndex: 5, background: bgVar }}><strong>{emp.name}</strong></td>
-                                    <td style={{ position: 'sticky', left: '150px', zIndex: 5, background: bgVar, borderRight: '2px solid var(--panel-border)', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                                        {userRole === 'admin' ? (emp.hourlyRate ? `${emp.hourlyRate.toFixed(2)} /ч` : '-') : '***'}
-                                    </td>
-                                    {daysArray.map(day => {
-                                        const val = dailyHours[day] || '';
-                                        return (
-                                            <td key={day} style={{ padding: 0, borderRight: '1px solid var(--panel-border)' }}>
-                                                <input
-                                                    type="text"
-                                                    disabled={userRole === 'viewer'}
-                                                    style={{
-                                                        width: '40px',
-                                                        height: '100%',
-                                                        padding: '0.5rem 0',
-                                                        textAlign: 'center',
-                                                        border: 'none',
-                                                        outline: 'none',
-                                                        background: 'transparent',
-                                                        color: val ? 'var(--text-primary)' : 'var(--text-muted)'
-                                                    }}
-                                                    defaultValue={val === 0 ? '' : val}
-                                                    onBlur={(e) => {
-                                                        const typedValue = e.target.value.trim();
-                                                        let cleanVal = val;
-                                                        if (typedValue === '') cleanVal = 0;
-                                                        else {
-                                                            const parsed = parseFloat(typedValue.replace(',', '.'));
-                                                            if (!isNaN(parsed)) cleanVal = parsed;
-                                                        }
-
-                                                        if (cleanVal !== val && (cleanVal !== 0 || val !== '')) {
-                                                            handleTimeChange(emp.id, day, cleanVal);
-                                                        }
-                                                    }}
-                                                    onFocus={(e) => e.target.select()}
-                                                />
-                                            </td>
-                                        )
-                                    })}
-                                    <td style={{ textAlign: 'center', fontWeight: 'bold', borderLeft: '2px solid var(--panel-border)', background: bgVar, color: 'var(--primary-color)' }}>
-                                        {totalHours > 0 ? totalHours : '-'}
+                        {Object.entries(
+                            employees.reduce((acc, emp) => {
+                                const role = emp.role || 'Без категория';
+                                if (!acc[role]) acc[role] = [];
+                                acc[role].push(emp);
+                                return acc;
+                            }, {})
+                        ).map(([role, roleEmployees]) => (
+                            <React.Fragment key={role}>
+                                <tr>
+                                    <td colSpan={daysInMonth + 3} style={{ background: 'var(--panel-bg)', fontWeight: 'bold', color: 'var(--primary-color)', padding: '0.75rem 1rem', borderTop: '2px solid var(--panel-border)', borderBottom: '2px solid var(--panel-border)', position: 'sticky', left: 0, zIndex: 15 }}>
+                                        {role}
                                     </td>
                                 </tr>
-                            );
-                        })}
+                                {roleEmployees.map((emp, index) => {
+                                    const currentLog = timeLogs.find(l => l.employeeId === emp.id && l.month === selectedMonth) || {};
+                                    const dailyHours = currentLog.dailyHours || {};
+                                    const totalHours = Object.values(dailyHours).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
+                                    const bgVar = index % 2 === 0 ? 'var(--bg-dark)' : 'var(--bg-darker)';
+                                    return (
+                                        <tr key={emp.id} style={{ background: bgVar }}>
+                                            <td style={{ position: 'sticky', left: 0, zIndex: 5, background: bgVar }}><strong>{emp.name}</strong></td>
+                                            <td style={{ position: 'sticky', left: '150px', zIndex: 5, background: bgVar, borderRight: '2px solid var(--panel-border)', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                                {userRole === 'admin' ? (emp.hourlyRate ? `${emp.hourlyRate.toFixed(2)} /ч` : '-') : '***'}
+                                            </td>
+                                            {daysArray.map(day => {
+                                                const val = dailyHours[day] || '';
+                                                return (
+                                                    <td key={day} style={{ padding: 0, borderRight: '1px solid var(--panel-border)' }}>
+                                                        <input
+                                                            type="text"
+                                                            disabled={userRole === 'viewer'}
+                                                            style={{ width: '40px', height: '100%', padding: '0.5rem 0', textAlign: 'center', border: 'none', outline: 'none', background: 'transparent', color: val ? 'var(--text-primary)' : 'var(--text-muted)' }}
+                                                            defaultValue={val === 0 ? '' : val}
+                                                            onBlur={(e) => {
+                                                                const typedValue = e.target.value.trim();
+                                                                let cleanVal = val;
+                                                                if (typedValue === '') cleanVal = 0;
+                                                                else {
+                                                                    const parsed = parseFloat(typedValue.replace(',', '.'));
+                                                                    if (!isNaN(parsed)) cleanVal = parsed;
+                                                                }
+                                                                if (cleanVal !== val && (cleanVal !== 0 || val !== '')) {
+                                                                    handleTimeChange(emp.id, day, cleanVal);
+                                                                }
+                                                            }}
+                                                            onFocus={(e) => e.target.select()}
+                                                        />
+                                                    </td>
+                                                )
+                                            })}
+                                            <td style={{ textAlign: 'center', fontWeight: 'bold', borderLeft: '2px solid var(--panel-border)', background: bgVar, color: 'var(--primary-color)' }}>
+                                                {totalHours > 0 ? totalHours : '-'}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </React.Fragment>
+                        ))}
                         {employees.length === 0 && (
                             <tr>
                                 <td colSpan={daysInMonth + 3} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
@@ -264,398 +268,417 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {employees.map(emp => {
-                            const currentLog = timeLogs.find(l => l.employeeId === emp.id && l.month === selectedMonth) || {};
-                            const dailyHours = currentLog.dailyHours || {};
-                            const advances = currentLog.advances || [];
-                            const isPaid = currentLog.isPaid === true;
-
-                            const totalAdvances = advances.reduce((sum, advance) => sum + (parseFloat(advance.amount) || 0), 0);
-
-                            const travels = currentLog.travelExpenses || [];
-                            const totalTravels = travels.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
-
-                            const totalHours = Object.values(dailyHours).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
-                            const totalDays = Object.values(dailyHours).filter(val => (parseFloat(val) || 0) > 0).length;
-
-                            let baseSalary = 0;
-
-                            if (emp.hourlyRate) {
-                                baseSalary = totalHours * emp.hourlyRate;
-                            } else if (emp.dailyRate) {
-                                baseSalary = totalDays * emp.dailyRate;
-                            }
-
-                            const finalSalary = baseSalary + totalTravels;
-                            const remainingSalary = finalSalary > 0 ? Math.max(0, finalSalary - totalAdvances) : 0;
-
-                            grandTotal += remainingSalary;
-
-                            return (
-                                <tr key={emp.id}>
-                                    <td data-label="Служител">
-                                        <strong>{emp.name}</strong><br />
-                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{emp.role}</span>
-                                    </td>
-                                    <td style={{ padding: '0.25rem' }} data-label="Начин">
-                                        <select
-                                            value={emp.paymentMethod || 'cash'}
-                                            onChange={(e) => updateEmployee(emp.id, { paymentMethod: e.target.value })}
-                                            style={{
-                                                background: 'transparent',
-                                                border: '1px solid var(--panel-border)',
-                                                color: 'var(--text-primary)',
-                                                padding: '0.25rem',
-                                                borderRadius: 'var(--radius-sm)',
-                                                width: '100%',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            <option value="cash" style={{ background: 'var(--bg-dark)' }}>В брой</option>
-                                            <option value="bank" style={{ background: 'var(--bg-dark)' }}>По банка</option>
-                                        </select>
-                                    </td>
-                                    <td style={{ textAlign: 'center' }} data-label="Дни/Часове">{`${totalHours} ч.`}</td>
-                                    <td style={{ textAlign: 'center' }} data-label="Ставка">
-                                        {userRole === 'admin' ? (emp.hourlyRate ? `${emp.hourlyRate.toFixed(2)} €/ч` : (emp.dailyRate ? `${emp.dailyRate.toFixed(2)} €/ден` : '-')) : '***'}
-                                    </td>
-                                    <td style={{ textAlign: 'right' }} data-label="Пътни">
-                                        {travelExpenseModeId === emp.id ? (
-                                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                                <input
-                                                    type="number"
-                                                    value={travelExpenseAmount}
-                                                    onChange={(e) => setTravelExpenseAmount(e.target.value)}
-                                                    placeholder="Сума €"
-                                                    style={{ width: '70px', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--panel-border)', background: 'var(--bg-dark)', color: 'white', fontSize: '0.8rem' }}
-                                                    autoFocus
-                                                />
-                                                <button className="btn btn-primary" style={{ padding: '0.35rem' }} onClick={async () => {
-                                                    const amt = parseFloat(travelExpenseAmount.replace(',', '.'));
-                                                    if (isNaN(amt) || amt < 0) return alert('Невалидна сума.');
-                                                    try {
-                                                        let newTravels = [{ amount: amt, date: new Date().toISOString() }];
-                                                        if (currentLog.id) {
-                                                            await updateDoc(doc(db, 'timeLogs', currentLog.id), { travelExpenses: newTravels });
-                                                        } else {
-                                                            await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, travelExpenses: newTravels });
-                                                        }
-                                                        setTravelExpenseModeId(null);
-                                                    } catch (err) { alert(err.message); }
-                                                }}><Check size={14} /></button>
-                                                <button className="btn btn-outline" style={{ padding: '0.35rem' }} onClick={() => setTravelExpenseModeId(null)}><X size={14} /></button>
-                                            </div>
-                                        ) : (
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                                {totalTravels > 0 ? (
-                                                    <span style={{ color: 'var(--success-color)', fontWeight: 'bold' }}>+ {totalTravels.toFixed(2)} €</span>
-                                                ) : <span style={{ color: 'var(--text-secondary)' }}>-</span>}
-                                                {userRole !== 'viewer' && !isPaid && (
-                                                    <button className="icon-btn" onClick={() => { setTravelExpenseModeId(emp.id); setTravelExpenseAmount(totalTravels > 0 ? totalTravels.toString() : ''); }} title="Добави Пътни" style={{ padding: '0.25rem', color: 'var(--primary-color)' }}>
-                                                        <Plus size={14} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        )}
-                                    </td>
-                                    <td style={{ textAlign: 'right' }} data-label="Аванси">
-                                        {editAdvanceModeId === emp.id ? (
-                                            <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                                <input
-                                                    type="number"
-                                                    value={editAdvanceAmount}
-                                                    onChange={(e) => setEditAdvanceAmount(e.target.value)}
-                                                    style={{ width: '80px', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--panel-border)', background: 'var(--bg-dark)', color: 'white', fontSize: '0.8rem' }}
-                                                    autoFocus
-                                                />
-                                                <button className="btn btn-primary" style={{ padding: '0.35rem' }} onClick={async () => {
-                                                    const amt = parseFloat(editAdvanceAmount.replace(',', '.'));
-                                                    if (isNaN(amt) || amt < 0) return alert('Невалидна сума.');
-
-                                                    try {
-                                                        const diff = parseFloat((amt - totalAdvances).toFixed(2));
-                                                        if (diff !== 0) {
-                                                            const relatedTxns = transactions.filter(t => t.type === 'expense' && (t.description || '').toLowerCase().includes(emp.name.toLowerCase()) && (t.description || '').toLowerCase().includes('аванс') && (t.description || '').toLowerCase().includes(selectedMonth.toLowerCase())).sort((a, b) => new Date(b.date) - new Date(a.date));
-                                                            if (diff < 0) {
-                                                                let toRemove = Math.abs(diff);
-                                                                for (let txn of relatedTxns) {
-                                                                    if (toRemove <= 0) break;
-                                                                    const txnAmt = parseFloat(txn.amount) || 0;
-                                                                    if (txnAmt <= toRemove) {
-                                                                        deleteTransaction(txn.id);
-                                                                        toRemove = parseFloat((toRemove - txnAmt).toFixed(2));
-                                                                    } else {
-                                                                        updateTransaction(txn.id, { amount: (txnAmt - toRemove).toFixed(2) });
-                                                                        toRemove = 0;
-                                                                    }
-                                                                }
-                                                                if (toRemove > 0) {
-                                                                    const transactionDate = new Date().toISOString().startsWith(selectedMonth)
-                                                                        ? new Date().toISOString().split('T')[0]
-                                                                        : `${selectedMonth}-01`;
-                                                                    addTransaction({
-                                                                        date: transactionDate,
-                                                                        type: 'income',
-                                                                        category: 'Корекция',
-                                                                        amount: toRemove.toFixed(2),
-                                                                        description: `Възстановен аванс: ${emp.name}`,
-                                                                        paymentMethod: 'cash'
-                                                                    });
-                                                                }
-                                                            } else {
-                                                                const method = emp.paymentMethod || 'cash';
-                                                                const methodText = method === 'bank' ? 'по банка' : 'в брой';
-
-                                                                if (relatedTxns.length > 0) {
-                                                                    const mostRecentTxn = relatedTxns[0];
-                                                                    const currentAmt = parseFloat(mostRecentTxn.amount) || 0;
-                                                                    updateTransaction(mostRecentTxn.id, { amount: (currentAmt + diff).toFixed(2) });
-                                                                } else {
-                                                                    const transactionDate = new Date().toISOString().startsWith(selectedMonth)
-                                                                        ? new Date().toISOString().split('T')[0]
-                                                                        : `${selectedMonth}-01`;
-
-                                                                    addTransaction({
-                                                                        date: transactionDate,
-                                                                        type: 'expense',
-                                                                        category: emp.role || 'ДРУГИ РАСХОДИ',
-                                                                        amount: diff.toFixed(2),
-                                                                        description: `Аванс: ${emp.name} за ${selectedMonth} (${methodText})`,
-                                                                        paymentMethod: method
-                                                                    });
-                                                                }
-                                                            }
-                                                        }
-
-                                                        let newAdvances = amt > 0 ? [{ amount: amt, date: new Date().toISOString() }] : [];
-                                                        if (currentLog.id) {
-                                                            await updateDoc(doc(db, 'timeLogs', currentLog.id), { advances: newAdvances });
-                                                        } else if (amt > 0) {
-                                                            await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, advances: newAdvances });
-                                                        }
-                                                        setEditAdvanceModeId(null);
-                                                    } catch (err) { alert(err.message); }
-                                                }}><Check size={14} /></button>
-                                                <button className="btn btn-outline" style={{ padding: '0.35rem' }} onClick={() => setEditAdvanceModeId(null)}><X size={14} /></button>
-                                            </div>
-                                        ) : (
-                                            totalAdvances > 0 ? (
-                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                                    <span style={{
-                                                        background: 'rgba(239, 68, 68, 0.1)',
-                                                        color: 'var(--warning-color)',
-                                                        padding: '0.25rem 0.75rem',
-                                                        borderRadius: '999px',
-                                                        fontWeight: 'bold',
-                                                        display: 'inline-block'
-                                                    }}>
-                                                        - {totalAdvances.toFixed(2)} €
-                                                    </span>
-                                                    {userRole !== 'viewer' && (
-                                                        <button className="btn-icon" onClick={() => { setEditAdvanceModeId(emp.id); setEditAdvanceAmount(totalAdvances.toString()); }} title="Редактиране" style={{ padding: '0.25rem' }}>
-                                                            <Edit2 size={14} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <span style={{ color: 'var(--text-secondary)' }}>-</span>
-                                            )
-                                        )}
-                                    </td>
-                                    {userRole === 'admin' && (
-                                        <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.1rem', color: isPaid ? 'var(--text-muted)' : 'var(--primary-color)' }} data-label="Остатък">
-                                            {isPaid ? <span style={{ color: 'var(--success-color)', fontSize: '0.9rem' }}>Изплатено</span> : `${remainingSalary.toFixed(2)} €`}
+                        {employees.length === 0 ? (
+                            <tr>
+                                <td colSpan={userRole === 'admin' ? 7 : (userRole === 'viewer' ? 4 : 6)} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
+                                    Няма данни.
+                                </td>
+                            </tr>
+                        ) : (
+                            Object.entries(
+                                employees.reduce((acc, emp) => {
+                                    const role = emp.role || 'Без категория';
+                                    if (!acc[role]) acc[role] = [];
+                                    acc[role].push(emp);
+                                    return acc;
+                                }, {})
+                            ).map(([role, roleEmployees]) => (
+                                <React.Fragment key={role}>
+                                    <tr>
+                                        <td colSpan={userRole === 'admin' ? 7 : (userRole === 'viewer' ? 4 : 6)} style={{ background: 'var(--panel-bg)', fontWeight: 'bold', color: 'var(--primary-color)', padding: '0.75rem 1rem', borderTop: '2px solid var(--panel-border)', borderBottom: '2px solid var(--panel-border)' }}>
+                                            {role}
                                         </td>
-                                    )}
-                                    <td style={{ textAlign: 'right' }} data-label="Действия">
-                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', opacity: processingId === emp.id ? 0.5 : 1, pointerEvents: processingId === emp.id ? 'none' : 'auto' }}>
-                                            {advanceModeId === emp.id ? (
-                                                <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                                                    <input
-                                                        type="number"
-                                                        value={advanceAmount}
-                                                        onChange={(e) => setAdvanceAmount(e.target.value)}
-                                                        placeholder="Сума €"
-                                                        style={{ width: '80px', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--panel-border)', background: 'var(--bg-dark)', color: 'white', fontSize: '0.8rem' }}
-                                                        autoFocus
-                                                    />
-                                                    <button
-                                                        className="btn btn-primary"
-                                                        style={{ padding: '0.35rem' }}
-                                                        onClick={async () => {
-                                                            const amt = parseFloat(advanceAmount.replace(',', '.'));
-                                                            if (isNaN(amt) || amt <= 0) return alert('Невалидна сума.');
-                                                            if (amt > remainingSalary && remainingSalary > 0) return alert(`Сумата надвишава остатъка от ${remainingSalary.toFixed(2)} €`);
+                                    </tr>
+                                    {roleEmployees.map((emp) => {
+                                        const currentLog = timeLogs.find(l => l.employeeId === emp.id && l.month === selectedMonth) || {};
+                                        const dailyHours = currentLog.dailyHours || {};
+                                        const advances = currentLog.advances || [];
+                                        const isPaid = currentLog.isPaid === true;
 
-                                                            setProcessingId(emp.id);
-                                                            try {
-                                                                const method = emp.paymentMethod || 'cash';
-                                                                const methodText = method === 'bank' ? 'по банка' : 'в брой';
-                                                                const desc = `Аванс: ${emp.name} за ${selectedMonth} (${methodText})`;
+                                        const totalAdvances = advances.reduce((sum, advance) => sum + (parseFloat(advance.amount) || 0), 0);
 
-                                                                // Use the currently selected month and a valid day (01) instead of today's exact date so that the transaction appears correctly in the selected month's ledger.
-                                                                const transactionDate = new Date().toISOString().startsWith(selectedMonth)
-                                                                    ? new Date().toISOString().split('T')[0]
-                                                                    : `${selectedMonth}-01`;
+                                        const travels = currentLog.travelExpenses || [];
+                                        const totalTravels = travels.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
 
-                                                                await addTransaction({
-                                                                    date: transactionDate,
-                                                                    type: 'expense',
-                                                                    category: emp.role || 'ДРУГИ РАСХОДИ',
-                                                                    amount: amt.toFixed(2),
-                                                                    description: desc,
-                                                                    paymentMethod: method
-                                                                });
+                                        const totalHours = Object.values(dailyHours).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
+                                        const totalDays = Object.values(dailyHours).filter(val => (parseFloat(val) || 0) > 0).length;
 
-                                                                let newAdvances = [...advances];
-                                                                newAdvances.push({ amount: amt, date: new Date().toISOString() });
+                                        let baseSalary = 0;
 
-                                                                if (currentLog.id) {
-                                                                    await updateDoc(doc(db, 'timeLogs', currentLog.id), { advances: newAdvances });
-                                                                } else {
-                                                                    await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, advances: newAdvances });
-                                                                }
-                                                                setAdvanceModeId(null);
-                                                                setAdvanceAmount('');
-                                                            } catch (err) {
-                                                                alert("Грешка при запазване: " + err.message);
-                                                            }
-                                                            setProcessingId(null);
+                                        if (emp.hourlyRate) {
+                                            baseSalary = totalHours * emp.hourlyRate;
+                                        } else if (emp.dailyRate) {
+                                            baseSalary = totalDays * emp.dailyRate;
+                                        }
+
+                                        const finalSalary = baseSalary + totalTravels;
+                                        const remainingSalary = finalSalary > 0 ? Math.max(0, finalSalary - totalAdvances) : 0;
+
+                                        grandTotal += remainingSalary;
+
+                                        return (
+                                            <tr key={emp.id}>
+                                                <td data-label="Служител">
+                                                    <strong>{emp.name}</strong><br />
+                                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{emp.role}</span>
+                                                </td>
+                                                <td style={{ padding: '0.25rem' }} data-label="Начин">
+                                                    <select
+                                                        value={emp.paymentMethod || 'cash'}
+                                                        onChange={(e) => updateEmployee(emp.id, { paymentMethod: e.target.value })}
+                                                        style={{
+                                                            background: 'transparent',
+                                                            border: '1px solid var(--panel-border)',
+                                                            color: 'var(--text-primary)',
+                                                            padding: '0.25rem',
+                                                            borderRadius: 'var(--radius-sm)',
+                                                            width: '100%',
+                                                            cursor: 'pointer'
                                                         }}
                                                     >
-                                                        <Check size={14} />
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-outline"
-                                                        style={{ padding: '0.35rem' }}
-                                                        onClick={() => { setAdvanceModeId(null); setAdvanceAmount(''); }}
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <button
-                                                        className="btn btn-outline"
-                                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
-                                                        disabled={isPaid}
-                                                        onClick={() => { setAdvanceModeId(emp.id); setAdvanceAmount(''); }}
-                                                    >
-                                                        Аванс
-                                                    </button>
-                                                    {isPaid ? (
-                                                        <button
-                                                            className="btn btn-outline"
-                                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', borderColor: 'orange', color: 'orange' }}
-                                                            onClick={async () => {
-                                                                if (!window.confirm(`Отмени плащането за ${emp.name} за ${selectedMonth}? Това също ще изтрие транзакцията за заплата.`)) return;
-                                                                setProcessingId(emp.id);
+                                                        <option value="cash" style={{ background: 'var(--bg-dark)' }}>В брой</option>
+                                                        <option value="bank" style={{ background: 'var(--bg-dark)' }}>По банка</option>
+                                                    </select>
+                                                </td>
+                                                <td style={{ textAlign: 'center' }} data-label="Дни/Часове">{`${totalHours} ч.`}</td>
+                                                <td style={{ textAlign: 'center' }} data-label="Ставка">
+                                                    {userRole === 'admin' ? (emp.hourlyRate ? `${emp.hourlyRate.toFixed(2)} €/ч` : (emp.dailyRate ? `${emp.dailyRate.toFixed(2)} €/ден` : '-')) : '***'}
+                                                </td>
+                                                <td style={{ textAlign: 'right' }} data-label="Пътни">
+                                                    {travelExpenseModeId === emp.id ? (
+                                                        <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                            <input
+                                                                type="number"
+                                                                value={travelExpenseAmount}
+                                                                onChange={(e) => setTravelExpenseAmount(e.target.value)}
+                                                                placeholder="Сума €"
+                                                                style={{ width: '70px', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--panel-border)', background: 'var(--bg-dark)', color: 'white', fontSize: '0.8rem' }}
+                                                                autoFocus
+                                                            />
+                                                            <button className="btn btn-primary" style={{ padding: '0.35rem' }} onClick={async () => {
+                                                                const amt = parseFloat(travelExpenseAmount.replace(',', '.'));
+                                                                if (isNaN(amt) || amt < 0) return alert('Невалидна сума.');
                                                                 try {
-                                                                    const relatedTxns = transactions.filter(t =>
-                                                                        t.type === 'expense' &&
-                                                                        (t.description || '').toLowerCase().includes(emp.name.toLowerCase()) &&
-                                                                        (t.description || '').toLowerCase().includes(selectedMonth.toLowerCase()) &&
-                                                                        (t.description || '').toLowerCase().includes('заплата')
-                                                                    );
-                                                                    for (let txn of relatedTxns) {
-                                                                        deleteTransaction(txn.id);
-                                                                    }
-
+                                                                    let newTravels = [{ amount: amt, date: new Date().toISOString() }];
                                                                     if (currentLog.id) {
-                                                                        await updateDoc(doc(db, 'timeLogs', currentLog.id), { isPaid: false });
+                                                                        await updateDoc(doc(db, 'timeLogs', currentLog.id), { travelExpenses: newTravels });
+                                                                    } else {
+                                                                        await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, travelExpenses: newTravels });
                                                                     }
-                                                                } catch (err) {
-                                                                    alert("Грешка при запазване: " + err.message);
-                                                                }
-                                                                setProcessingId(null);
-                                                            }}
-                                                        >
-                                                            Отмени
-                                                        </button>
+                                                                    setTravelExpenseModeId(null);
+                                                                } catch (err) { alert(err.message); }
+                                                            }}><Check size={14} /></button>
+                                                            <button className="btn btn-outline" style={{ padding: '0.35rem' }} onClick={() => setTravelExpenseModeId(null)}><X size={14} /></button>
+                                                        </div>
                                                     ) : (
-                                                        userRole === 'admin' && (
-                                                            <button
-                                                                className="btn btn-primary"
-                                                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
-                                                                disabled={remainingSalary <= 0 && totalTravels === 0}
-                                                                onClick={async () => {
-                                                                    const method = emp.paymentMethod || 'cash';
-                                                                    const methodText = method === 'bank' ? 'по банка' : 'в брой';
-                                                                    const confirmMsg = `Изплащане: ${emp.name} за ${selectedMonth}\nОстатък Заплата: ${(remainingSalary - totalTravels).toFixed(2)} €\nПътни: ${totalTravels.toFixed(2)} €\nОБЩО: ${remainingSalary.toFixed(2)} €`;
-                                                                    if (!window.confirm(confirmMsg)) return;
-                                                                    setProcessingId(emp.id);
-                                                                    try {
-                                                                        const transactionDate = new Date().toISOString().startsWith(selectedMonth)
-                                                                            ? new Date().toISOString().split('T')[0]
-                                                                            : `${selectedMonth}-01`;
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                                            {totalTravels > 0 ? (
+                                                                <span style={{ color: 'var(--success-color)', fontWeight: 'bold' }}>+ {totalTravels.toFixed(2)} €</span>
+                                                            ) : <span style={{ color: 'var(--text-secondary)' }}>-</span>}
+                                                            {userRole !== 'viewer' && !isPaid && (
+                                                                <button className="btn-icon" onClick={() => { setTravelExpenseModeId(emp.id); setTravelExpenseAmount(totalTravels > 0 ? totalTravels.toString() : ''); }} title="Добави Пътни" style={{ padding: '0.25rem' }}>
+                                                                    <Plus size={14} />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td style={{ textAlign: 'right' }} data-label="Аванси">
+                                                    {editAdvanceModeId === emp.id ? (
+                                                        <div style={{ display: 'flex', gap: '0.25rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                            <input
+                                                                type="number"
+                                                                value={editAdvanceAmount}
+                                                                onChange={(e) => setEditAdvanceAmount(e.target.value)}
+                                                                style={{ width: '80px', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--panel-border)', background: 'var(--bg-dark)', color: 'white', fontSize: '0.8rem' }}
+                                                                autoFocus
+                                                            />
+                                                            <button className="btn btn-primary" style={{ padding: '0.35rem' }} onClick={async () => {
+                                                                const amt = parseFloat(editAdvanceAmount.replace(',', '.'));
+                                                                if (isNaN(amt) || amt < 0) return alert('Невалидна сума.');
 
-                                                                        const pureSalary = remainingSalary - totalTravels;
+                                                                try {
+                                                                    const diff = parseFloat((amt - totalAdvances).toFixed(2));
+                                                                    if (diff !== 0) {
+                                                                        const relatedTxns = transactions.filter(t => t.type === 'expense' && (t.description || '').toLowerCase().includes(emp.name.toLowerCase()) && (t.description || '').toLowerCase().includes('аванс') && (t.description || '').toLowerCase().includes(selectedMonth.toLowerCase())).sort((a, b) => new Date(b.date) - new Date(a.date));
+                                                                        if (diff < 0) {
+                                                                            let toRemove = Math.abs(diff);
+                                                                            for (let txn of relatedTxns) {
+                                                                                if (toRemove <= 0) break;
+                                                                                const txnAmt = parseFloat(txn.amount) || 0;
+                                                                                if (txnAmt <= toRemove) {
+                                                                                    deleteTransaction(txn.id);
+                                                                                    toRemove = parseFloat((toRemove - txnAmt).toFixed(2));
+                                                                                } else {
+                                                                                    updateTransaction(txn.id, { amount: (txnAmt - toRemove).toFixed(2) });
+                                                                                    toRemove = 0;
+                                                                                }
+                                                                            }
+                                                                            if (toRemove > 0) {
+                                                                                const transactionDate = new Date().toISOString().startsWith(selectedMonth)
+                                                                                    ? new Date().toISOString().split('T')[0]
+                                                                                    : `${selectedMonth}-01`;
+                                                                                addTransaction({
+                                                                                    date: transactionDate,
+                                                                                    type: 'income',
+                                                                                    category: 'Корекция',
+                                                                                    amount: toRemove.toFixed(2),
+                                                                                    description: `Възстановен аванс: ${emp.name}`,
+                                                                                    paymentMethod: 'cash'
+                                                                                });
+                                                                            }
+                                                                        } else {
+                                                                            const method = emp.paymentMethod || 'cash';
+                                                                            const methodText = method === 'bank' ? 'по банка' : 'в брой';
 
-                                                                        // Transaction 1: Pure Salary Remaining
-                                                                        if (pureSalary > 0) {
+                                                                            if (relatedTxns.length > 0) {
+                                                                                const mostRecentTxn = relatedTxns[0];
+                                                                                const currentAmt = parseFloat(mostRecentTxn.amount) || 0;
+                                                                                updateTransaction(mostRecentTxn.id, { amount: (currentAmt + diff).toFixed(2) });
+                                                                            } else {
+                                                                                const transactionDate = new Date().toISOString().startsWith(selectedMonth)
+                                                                                    ? new Date().toISOString().split('T')[0]
+                                                                                    : `${selectedMonth}-01`;
+
+                                                                                addTransaction({
+                                                                                    date: transactionDate,
+                                                                                    type: 'expense',
+                                                                                    category: emp.role || 'ДРУГИ РАСХОДИ',
+                                                                                    amount: diff.toFixed(2),
+                                                                                    description: `Аванс: ${emp.name} за ${selectedMonth} (${methodText})`,
+                                                                                    paymentMethod: method
+                                                                                });
+                                                                            }
+                                                                        }
+                                                                    }
+
+                                                                    let newAdvances = amt > 0 ? [{ amount: amt, date: new Date().toISOString() }] : [];
+                                                                    if (currentLog.id) {
+                                                                        await updateDoc(doc(db, 'timeLogs', currentLog.id), { advances: newAdvances });
+                                                                    } else if (amt > 0) {
+                                                                        await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, advances: newAdvances });
+                                                                    }
+                                                                    setEditAdvanceModeId(null);
+                                                                } catch (err) { alert(err.message); }
+                                                            }}><Check size={14} /></button>
+                                                            <button className="btn btn-outline" style={{ padding: '0.35rem' }} onClick={() => setEditAdvanceModeId(null)}><X size={14} /></button>
+                                                        </div>
+                                                    ) : (
+                                                        totalAdvances > 0 ? (
+                                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                                                <span style={{
+                                                                    background: 'rgba(239, 68, 68, 0.1)',
+                                                                    color: 'var(--warning-color)',
+                                                                    padding: '0.25rem 0.75rem',
+                                                                    borderRadius: '999px',
+                                                                    fontWeight: 'bold',
+                                                                    display: 'inline-block'
+                                                                }}>
+                                                                    - {totalAdvances.toFixed(2)} €
+                                                                </span>
+                                                                {userRole !== 'viewer' && (
+                                                                    <button className="btn-icon" onClick={() => { setEditAdvanceModeId(emp.id); setEditAdvanceAmount(totalAdvances.toString()); }} title="Редактиране" style={{ padding: '0.25rem' }}>
+                                                                        <Edit2 size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span style={{ color: 'var(--text-secondary)' }}>-</span>
+                                                        )
+                                                    )}
+                                                </td>
+                                                {userRole === 'admin' && (
+                                                    <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.1rem', color: isPaid ? 'var(--text-muted)' : 'var(--primary-color)' }} data-label="Остатък">
+                                                        {isPaid ? <span style={{ color: 'var(--success-color)', fontSize: '0.9rem' }}>Изплатено</span> : `${remainingSalary.toFixed(2)} €`}
+                                                    </td>
+                                                )}
+                                                <td style={{ textAlign: 'right' }} data-label="Действия">
+                                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', opacity: processingId === emp.id ? 0.5 : 1, pointerEvents: processingId === emp.id ? 'none' : 'auto' }}>
+                                                        {advanceModeId === emp.id ? (
+                                                            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                                                <input
+                                                                    type="number"
+                                                                    value={advanceAmount}
+                                                                    onChange={(e) => setAdvanceAmount(e.target.value)}
+                                                                    placeholder="Сума €"
+                                                                    style={{ width: '80px', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--panel-border)', background: 'var(--bg-dark)', color: 'white', fontSize: '0.8rem' }}
+                                                                    autoFocus
+                                                                />
+                                                                <button
+                                                                    className="btn btn-primary"
+                                                                    style={{ padding: '0.35rem' }}
+                                                                    onClick={async () => {
+                                                                        const amt = parseFloat(advanceAmount.replace(',', '.'));
+                                                                        if (isNaN(amt) || amt <= 0) return alert('Невалидна сума.');
+                                                                        if (amt > remainingSalary && remainingSalary > 0) return alert(`Сумата надвишава остатъка от ${remainingSalary.toFixed(2)} €`);
+
+                                                                        setProcessingId(emp.id);
+                                                                        try {
+                                                                            const method = emp.paymentMethod || 'cash';
+                                                                            const methodText = method === 'bank' ? 'по банка' : 'в брой';
+                                                                            const desc = `Аванс: ${emp.name} за ${selectedMonth} (${methodText})`;
+
+                                                                            // Use the currently selected month and a valid day (01) instead of today's exact date so that the transaction appears correctly in the selected month's ledger.
+                                                                            const transactionDate = new Date().toISOString().startsWith(selectedMonth)
+                                                                                ? new Date().toISOString().split('T')[0]
+                                                                                : `${selectedMonth}-01`;
+
                                                                             await addTransaction({
                                                                                 date: transactionDate,
                                                                                 type: 'expense',
                                                                                 category: emp.role || 'ДРУГИ РАСХОДИ',
-                                                                                amount: pureSalary.toFixed(2),
-                                                                                description: `Изплатен остатък от заплата: ${emp.name} за ${selectedMonth} (${methodText})`,
+                                                                                amount: amt.toFixed(2),
+                                                                                description: desc,
                                                                                 paymentMethod: method
                                                                             });
-                                                                        }
 
-                                                                        // Transaction 2: Travel Expenses
-                                                                        if (totalTravels > 0) {
-                                                                            await addTransaction({
-                                                                                date: transactionDate,
-                                                                                type: 'expense',
-                                                                                category: 'ПЪТНИ РАЗХОДИ',
-                                                                                amount: totalTravels.toFixed(2),
-                                                                                description: `Изплатени пътни разходи: ${emp.name} за ${selectedMonth} (${methodText})`,
-                                                                                paymentMethod: method
-                                                                            });
-                                                                        }
+                                                                            let newAdvances = [...advances];
+                                                                            newAdvances.push({ amount: amt, date: new Date().toISOString() });
 
-                                                                        if (currentLog.id) {
-                                                                            await updateDoc(doc(db, 'timeLogs', currentLog.id), { isPaid: true });
-                                                                        } else {
-                                                                            await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, isPaid: true });
+                                                                            if (currentLog.id) {
+                                                                                await updateDoc(doc(db, 'timeLogs', currentLog.id), { advances: newAdvances });
+                                                                            } else {
+                                                                                await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, advances: newAdvances });
+                                                                            }
+                                                                            setAdvanceModeId(null);
+                                                                            setAdvanceAmount('');
+                                                                        } catch (err) {
+                                                                            alert("Грешка при запазване: " + err.message);
                                                                         }
-                                                                    } catch (err) {
-                                                                        alert("Грешка при запазване: " + err.message);
-                                                                    }
-                                                                    setProcessingId(null);
-                                                                }}
-                                                            >
-                                                                Изплати
-                                                            </button>
-                                                        )
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                        {employees.length === 0 && (
-                            <tr>
-                                <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
-                                    Няма данни.
-                                </td>
-                            </tr>
+                                                                        setProcessingId(null);
+                                                                    }}
+                                                                >
+                                                                    <Check size={14} />
+                                                                </button>
+                                                                <button
+                                                                    className="btn btn-outline"
+                                                                    style={{ padding: '0.35rem' }}
+                                                                    onClick={() => { setAdvanceModeId(null); setAdvanceAmount(''); }}
+                                                                >
+                                                                    <X size={14} />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <button
+                                                                    className="btn btn-outline"
+                                                                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                                                                    disabled={isPaid}
+                                                                    onClick={() => { setAdvanceModeId(emp.id); setAdvanceAmount(''); }}
+                                                                >
+                                                                    Аванс
+                                                                </button>
+                                                                {isPaid ? (
+                                                                    <button
+                                                                        className="btn btn-outline"
+                                                                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', borderColor: 'orange', color: 'orange' }}
+                                                                        onClick={async () => {
+                                                                            if (!window.confirm(`Отмени плащането за ${emp.name} за ${selectedMonth}? Това също ще изтрие транзакцията за заплата.`)) return;
+                                                                            setProcessingId(emp.id);
+                                                                            try {
+                                                                                const relatedTxns = transactions.filter(t =>
+                                                                                    t.type === 'expense' &&
+                                                                                    (t.description || '').toLowerCase().includes(emp.name.toLowerCase()) &&
+                                                                                    (t.description || '').toLowerCase().includes(selectedMonth.toLowerCase()) &&
+                                                                                    (t.description || '').toLowerCase().includes('заплата')
+                                                                                );
+                                                                                for (let txn of relatedTxns) {
+                                                                                    deleteTransaction(txn.id);
+                                                                                }
+
+                                                                                if (currentLog.id) {
+                                                                                    await updateDoc(doc(db, 'timeLogs', currentLog.id), { isPaid: false });
+                                                                                }
+                                                                            } catch (err) {
+                                                                                alert("Грешка при запазване: " + err.message);
+                                                                            }
+                                                                            setProcessingId(null);
+                                                                        }}
+                                                                    >
+                                                                        Отмени
+                                                                    </button>
+                                                                ) : (
+                                                                    userRole === 'admin' && (
+                                                                        <button
+                                                                            className="btn btn-primary"
+                                                                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                                                                            disabled={remainingSalary <= 0 && totalTravels === 0}
+                                                                            onClick={async () => {
+                                                                                const method = emp.paymentMethod || 'cash';
+                                                                                const methodText = method === 'bank' ? 'по банка' : 'в брой';
+                                                                                const confirmMsg = `Изплащане: ${emp.name} за ${selectedMonth}\nОстатък Заплата: ${(remainingSalary - totalTravels).toFixed(2)} €\nПътни: ${totalTravels.toFixed(2)} €\nОБЩО: ${remainingSalary.toFixed(2)} €`;
+                                                                                if (!window.confirm(confirmMsg)) return;
+                                                                                setProcessingId(emp.id);
+                                                                                try {
+                                                                                    const transactionDate = new Date().toISOString().startsWith(selectedMonth)
+                                                                                        ? new Date().toISOString().split('T')[0]
+                                                                                        : `${selectedMonth}-01`;
+
+                                                                                    const pureSalary = remainingSalary - totalTravels;
+
+                                                                                    // Transaction 1: Pure Salary Remaining
+                                                                                    if (pureSalary > 0) {
+                                                                                        await addTransaction({
+                                                                                            date: transactionDate,
+                                                                                            type: 'expense',
+                                                                                            category: emp.role || 'ДРУГИ РАСХОДИ',
+                                                                                            amount: pureSalary.toFixed(2),
+                                                                                            description: `Изплатен остатък от заплата: ${emp.name} за ${selectedMonth} (${methodText})`,
+                                                                                            paymentMethod: method
+                                                                                        });
+                                                                                    }
+
+                                                                                    // Transaction 2: Travel Expenses
+                                                                                    if (totalTravels > 0) {
+                                                                                        await addTransaction({
+                                                                                            date: transactionDate,
+                                                                                            type: 'expense',
+                                                                                            category: 'ПЪТНИ РАЗХОДИ',
+                                                                                            amount: totalTravels.toFixed(2),
+                                                                                            description: `Изплатени пътни разходи: ${emp.name} за ${selectedMonth} (${methodText})`,
+                                                                                            paymentMethod: method
+                                                                                        });
+                                                                                    }
+
+                                                                                    if (currentLog.id) {
+                                                                                        await updateDoc(doc(db, 'timeLogs', currentLog.id), { isPaid: true });
+                                                                                    } else {
+                                                                                        await addDoc(collection(db, 'timeLogs'), { employeeId: emp.id, month: selectedMonth, dailyHours: {}, isPaid: true });
+                                                                                    }
+                                                                                } catch (err) {
+                                                                                    alert("Грешка при запазване: " + err.message);
+                                                                                }
+                                                                                setProcessingId(null);
+                                                                            }}
+                                                                        >
+                                                                            Изплати
+                                                                        </button>
+                                                                    )
+                                                                )}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </React.Fragment>
+                            ))
                         )}
                     </tbody>
-                    {employees.length > 0 && userRole === 'admin' && (
-                        <tfoot>
-                            <tr>
-                                <td colSpan="4" style={{ textAlign: 'right', fontWeight: 'bold' }}>Общо остатъчни задължения (месец):</td>
-                                <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--success-color)' }}>
-                                    {grandTotal.toFixed(2)} €
-                                </td>
-                                <td></td>
-                            </tr>
-                        </tfoot>
-                    )}
+                    {
+                        employees.length > 0 && userRole === 'admin' && (
+                            <tfoot>
+                                <tr>
+                                    <td colSpan="4" style={{ textAlign: 'right', fontWeight: 'bold' }}>Общо остатъчни задължения (месец):</td>
+                                    <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--success-color)' }}>
+                                        {grandTotal.toFixed(2)} €
+                                    </td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        )
+                    }
                 </table>
             </div>
         </div>

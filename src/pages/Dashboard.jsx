@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { TrendingUp, TrendingDown, DollarSign, Activity, Wallet, Building, FileText } from 'lucide-react';
-import { AreaChart, Area, BarChart, Bar, Legend, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, Legend, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useTranslation } from 'react-i18next';
 
 // Format currency
@@ -297,10 +297,44 @@ export const Dashboard = () => {
             {/* Category Breakdowns */}
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
                 gap: '1.5rem',
-                marginTop: '2.5rem'
+                marginTop: '1.5rem'
             }}>
+                <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.125rem', color: 'var(--text-primary)' }}>{t('dashboard.expensesByCategory')} (Графика)</h3>
+                    {expenseByCategory.length === 0 ? (
+                        <div style={{ flex: 1, display: 'grid', placeItems: 'center', color: 'var(--text-muted)' }}>{t('dashboard.noExpense')}</div>
+                    ) : (
+                        <div style={{ flex: 1, width: '100%', minHeight: '300px' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={expenseByCategory}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={100}
+                                        paddingAngle={5}
+                                        dataKey="value"
+                                        stroke="none"
+                                    >
+                                        {expenseByCategory.map((entry, index) => {
+                                            const colors = ['#f43f5e', '#ec4899', '#d946ef', '#a855f7', '#8b5cf6', '#6366f1', '#3b82f6', '#0ea5e9'];
+                                            return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                                        })}
+                                    </Pie>
+                                    <Tooltip
+                                        formatter={(value) => formatCurrency(value)}
+                                        contentStyle={{ backgroundColor: 'var(--bg-darker)', borderColor: 'var(--panel-border)', borderRadius: 'var(--radius-md)' }}
+                                        itemStyle={{ color: 'var(--text-primary)' }}
+                                    />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
+                </div>
+
                 <div className="glass-panel" style={{ padding: '1.5rem' }}>
                     <h3 style={{ marginBottom: '1.5rem', fontSize: '1.125rem', color: 'var(--success)' }}>{t('dashboard.incomeByCategory')}</h3>
                     {incomeByCategory.length === 0 ? (

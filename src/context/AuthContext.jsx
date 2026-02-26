@@ -19,14 +19,13 @@ export const AuthProvider = ({ children }) => {
                 try {
                     const userDoc = await getDoc(doc(db, 'users', user.uid));
                     if (userDoc.exists()) {
-                        setUserRole('admin'); // Temporary blanket bypass
+                        setUserRole(userDoc.data().role || 'viewer');
                     } else {
-                        setUserRole('admin'); // Fallback blanket bypass
+                        setUserRole('viewer');
                     }
                 } catch (e) {
-                    console.error("Error fetching user role, likely Quota Limit Reached:", e);
-                    // Fallback to admin to bypass quota limit entirely for everyone
-                    setUserRole('admin');
+                    console.error("Error fetching user role:", e);
+                    setUserRole('viewer');
                 }
             } else {
                 setUserRole(null);
