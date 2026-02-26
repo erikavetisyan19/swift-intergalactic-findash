@@ -527,13 +527,21 @@ h6 {
 .payroll-grid th,
 .payroll-grid td {
   border: 1px solid var(--panel-border) !important;
-  padding: 0.75rem 0.75rem !important;
-  /* Reduced padding to fit more content without scrolling */
+  padding: 0.5rem 0.5rem !important;
+  font-size: 0.875rem;
 }
 
 .payroll-grid th {
   background-color: rgba(255, 255, 255, 0.02);
   /* Allowed headers to wrap naturally */
+}
+
+.payroll-grid .btn,
+.payroll-grid select,
+.payroll-grid input {
+  padding: 0.25rem 0.5rem !important;
+  font-size: 0.8rem !important;
+  height: auto !important;
 }
 
 /* Custom Month Picker Filter */
