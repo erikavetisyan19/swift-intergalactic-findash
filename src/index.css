@@ -527,14 +527,13 @@ h6 {
 .payroll-grid th,
 .payroll-grid td {
   border: 1px solid var(--panel-border) !important;
-  padding: 1rem 1.5rem !important;
-  /* Wider padding for readability */
+  padding: 0.75rem 0.75rem !important;
+  /* Reduced padding to fit more content without scrolling */
 }
 
 .payroll-grid th {
   background-color: rgba(255, 255, 255, 0.02);
-  white-space: nowrap;
-  /* Prevent headers from squishing */
+  /* Allowed headers to wrap naturally */
 }
 
 /* Custom Month Picker Filter */

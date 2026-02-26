@@ -259,7 +259,7 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                         <tr>
                             <th>Служител</th>
                             <th>Начин</th>
-                            <th style={{ whiteSpace: 'nowrap' }}>Отработени Дни/Часове</th>
+                            <th>Отработени Дни/Часове</th>
                             <th style={{ textAlign: 'center' }}>Ставка</th>
                             <th style={{ textAlign: 'right' }}>Пътни</th>
                             <th style={{ textAlign: 'right' }}>Аванси</th>
