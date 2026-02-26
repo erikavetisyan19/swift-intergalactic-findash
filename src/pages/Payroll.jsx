@@ -683,10 +683,9 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
                             <tfoot>
                                 <tr>
                                     <td colSpan="6" style={{ textAlign: 'right', fontWeight: 'bold' }}>Общо остатъчни задължения (месец):</td>
-                                    <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--success-color)' }}>
+                                    <td colSpan="2" style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--success-color)', paddingRight: '1rem' }}>
                                         {grandTotal.toFixed(2)} €
                                     </td>
-                                    <td></td>
                                 </tr>
                             </tfoot>
                         )
