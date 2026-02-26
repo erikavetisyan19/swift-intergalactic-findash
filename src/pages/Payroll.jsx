@@ -611,7 +611,7 @@ const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, 
     const { userRole } = useAuth();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
-    const [formData, setFormData] = useState({ name: '', role: '', hourlyRate: '', dailyRate: '', paymentMethod: 'cash' });
+    const [formData, setFormData] = useState({ name: '', role: '', hourlyRate: '', dailyRate: '' });
 
     const roleOptions = [
         "ЗАПЛАТА УПРАВИТЕЛИИ, ОФИС И ВОДИТЕЛЬ",
@@ -630,8 +630,7 @@ const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, 
             name: formData.name,
             role: formData.role,
             hourlyRate: parseFloat(formData.hourlyRate) || 0,
-            dailyRate: parseFloat(formData.dailyRate) || 0,
-            paymentMethod: formData.paymentMethod || 'cash'
+            dailyRate: parseFloat(formData.dailyRate) || 0
         };
 
         if (editingId) {
@@ -641,7 +640,7 @@ const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, 
             addEmployee(payload);
             setIsAdding(false);
         }
-        setFormData({ name: '', role: '', hourlyRate: '', dailyRate: '', paymentMethod: 'cash' });
+        setFormData({ name: '', role: '', hourlyRate: '', dailyRate: '' });
     };
 
     const handleEdit = (emp) => {
@@ -649,8 +648,7 @@ const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, 
             name: emp.name,
             role: emp.role || '',
             hourlyRate: emp.hourlyRate || '',
-            dailyRate: emp.dailyRate || '',
-            paymentMethod: emp.paymentMethod || 'cash'
+            dailyRate: emp.dailyRate || ''
         });
         setEditingId(emp.id);
         setIsAdding(true);
@@ -659,7 +657,7 @@ const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, 
     const handleCancel = () => {
         setIsAdding(false);
         setEditingId(null);
-        setFormData({ name: '', role: '', hourlyRate: '', dailyRate: '', paymentMethod: 'cash' });
+        setFormData({ name: '', role: '', hourlyRate: '', dailyRate: '' });
     };
 
     return (
@@ -703,18 +701,7 @@ const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, 
                                 ))}
                             </select>
                         </div>
-                        <div className="input-group">
-                            <label>Метод на плащане</label>
-                            <select
-                                className="filter-input"
-                                value={formData.paymentMethod}
-                                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                                style={{ width: '100%', padding: '0.6rem 1rem' }}
-                            >
-                                <option value="cash">В брой</option>
-                                <option value="bank">По банка</option>
-                            </select>
-                        </div>
+
                         {userRole === 'admin' && (
                             <>
                                 <div className="input-group">
