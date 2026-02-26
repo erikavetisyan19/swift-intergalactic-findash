@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { Users, Clock, Calculator, Plus, Trash2, Edit2, Save, Send, Check, X, Calendar } from 'lucide-react';
@@ -10,7 +11,7 @@ import { db } from '../firebase';
 export const Payroll = () => {
     const { t } = useTranslation();
     const { userRole } = useAuth();
-    const { employees, timeLogs, addEmployee, updateEmployee, deleteEmployee, addTimeLog, deleteTimeLog } = useContext(FinanceContext);
+    const { employees, timeLogs, addEmployee, updateEmployee, deleteEmployee, addTimeLog } = useContext(FinanceContext);
     const [activeTab, setActiveTab] = useState('time'); // 'time', 'salary', 'employees'
 
     return (
@@ -68,7 +69,7 @@ export const Payroll = () => {
     );
 };
 
-const TimeTrackingTab = ({ employees, timeLogs, addTimeLog, t }) => {
+const TimeTrackingTab = ({ employees, timeLogs, t }) => {
     const { userRole } = useAuth();
     const today = new Date();
     const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -698,7 +699,7 @@ const SalaryTab = ({ employees, timeLogs, t }) => {
     );
 };
 
-const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee, t }) => {
+const EmployeesTab = ({ employees, addEmployee, updateEmployee, deleteEmployee }) => {
     const { userRole } = useAuth();
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
 import { Plus, Search, Trash2, DollarSign, Camera, Edit2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import Tesseract from 'tesseract.js';
 import { useAuth } from '../context/AuthContext';
@@ -59,12 +60,12 @@ export const Invoices = () => {
             // Basic parsing logic
             // 1. Total Amount: Try strict match, then fallback to finding the highest reasonable currency number
             let extractedAmount = null;
-            const amountStrMatch = text.match(/(?:обща сума|сума за плащане|сума|total|плащане|стойност|всичко|ддс|основа)[\s\:A-Za-zА-Яа-я]*([\d\s]+[\.\,]\d{2})/i);
+            const amountStrMatch = text.match(/(?:обща сума|сума за плащане|сума|total|плащане|стойност|всичко|ддс|основа)[\s:A-Za-zА-Яа-я]*([\d\s]+[.,]\d{2})/i);
             if (amountStrMatch && amountStrMatch[1]) {
                 extractedAmount = parseFloat(amountStrMatch[1].replace(/\s/g, '').replace(',', '.'));
             } else {
                 // Fallback: Find all 0.00 or 0,00 formatted numbers in the text and get the maximum
-                const allNumbers = [...text.matchAll(/\b(\d{1,6}[\.\,]\d{2})\b/g)];
+                const allNumbers = [...text.matchAll(/\b(\d{1,6}[.,]\d{2})\b/g)];
                 if (allNumbers.length > 0) {
                     const parsedNums = allNumbers.map(m => parseFloat(m[1].replace(',', '.'))).filter(n => !isNaN(n));
                     if (parsedNums.length > 0) extractedAmount = Math.max(...parsedNums);
@@ -75,14 +76,14 @@ export const Invoices = () => {
             }
 
             // 2. Client Name: Look for common buyer/receiver prefixes
-            const clientMatch = text.match(/(?:получател|клиент|получател:|клиент:|купувач)[\s]+([A-Za-zА-Яа-я0-9\s\.\,\-\"\']+)/i) || text.match(/([А-Я][А-Яа-я]+(?:\s[А-Яа-я]+)?\s+(?:ООД|ЕООД|АД|ЕАД|ЕТ))/i);
+            const clientMatch = text.match(/(?:получател|клиент|получател:|клиент:|купувач)\s+([A-Za-zА-Яа-я0-9\s.,\-"']+)/i) || text.match(/([А-Я][А-Яа-я]+(?:\s[А-Яа-я]+)?\s+(?:ООД|ЕООД|АД|ЕАД|ЕТ))/i);
             if (clientMatch && clientMatch[1]) {
                 const cleanedClient = clientMatch[1].replace(/(?:ЕИК|ДДС|BG\d+|гр\.|ул\.).*/i, '').trim();
                 setClientName(cleanedClient.substring(0, 50));
             }
 
             // 3. Date (DD-MM-YYYY or DD.MM.YYYY even if missing dots)
-            const dateMatch = text.match(/(?:дата|date)[\s\:\.]*(\d{2})[\/\-\.]?(\d{2})[\/\-\.]?(\d{4})/i) || text.match(/(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{2,4})/);
+            const dateMatch = text.match(/(?:дата|date)[\s:.]*(\d{2})[/\-.]?(\d{2})[/\-.]?(\d{4})/i) || text.match(/(\d{2})[/\-.](\d{2})[/\-.](\d{2,4})/);
             if (dateMatch) {
                 const year = dateMatch[3].length === 2 ? `20${dateMatch[3]}` : dateMatch[3];
                 setDueDate(`${year}-${dateMatch[2]}-${dateMatch[1]}`);

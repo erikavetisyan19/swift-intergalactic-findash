@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Receipt, FileText, Tags, Menu, X, FileSpreadsheet, Users, LogOut } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
@@ -27,7 +28,7 @@ export const Sidebar = () => {
         return true;
     });
 
-    const SidebarContent = () => (
+    const renderSidebarContent = () => (
         <>
             <div style={{ marginBottom: '3rem', padding: '0 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h1 className="text-gradient" style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -114,7 +115,7 @@ export const Sidebar = () => {
                 position: 'sticky',
                 top: '2rem'
             }}>
-                <SidebarContent />
+                {renderSidebarContent()}
             </div>
 
             {/* Mobile Sidebar Overlay */}
@@ -148,7 +149,7 @@ export const Sidebar = () => {
                             }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <SidebarContent />
+                            {renderSidebarContent()}
                         </motion.div>
                     </motion.div>
                 )}

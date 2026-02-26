@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+
 import { useAuth } from '../context/AuthContext';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 
@@ -12,7 +13,7 @@ export const Login = () => {
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
-    const { t } = useTranslation();
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();

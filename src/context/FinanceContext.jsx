@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { collection, query, onSnapshot, addDoc, deleteDoc, doc, setDoc, updateDoc, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const FinanceContext = createContext();
 
 export const FinanceProvider = ({ children }) => {
@@ -25,8 +26,8 @@ export const FinanceProvider = ({ children }) => {
         "ЗАПЛАТИ КУХНЯ", "ЗАПЛАТИ СЕРВИТЬОРИ,ЧЕКЪРИ,БАРМЕН", "ЗАПЛАТА СПАСИТЕЛИ", "ЗАПЛАТА АНИМАТОРИ"
     ];
 
-    // Ensure array values are unique
-    const uniqueCategories = [...new Set(newCategoriesList)];
+    // Ensure array values are unique and memoized
+    const uniqueCategories = useMemo(() => [...new Set(newCategoriesList)], [newCategoriesList]);
 
     const [transactions, setTransactions] = useState([]);
     const [invoices, setInvoices] = useState([]);
@@ -36,7 +37,6 @@ export const FinanceProvider = ({ children }) => {
         income: uniqueCategories,
         expense: uniqueCategories
     });
-    const [loading, setLoading] = useState(true);
 
     // Sync Data with Firestore
     useEffect(() => {
@@ -65,7 +65,6 @@ export const FinanceProvider = ({ children }) => {
                 // Overwrite with the new combined list
                 setDoc(doc(db, 'settings', 'categories'), { income: uniqueCategories, expense: uniqueCategories });
             }
-            setLoading(false);
         });
 
         // 3. Sync Invoices (Limited to recent)
@@ -78,8 +77,9 @@ export const FinanceProvider = ({ children }) => {
             setInvoices(invoicesArray.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate)));
         });
 
-        // 4. Sync Employees
-        const unsubEmployees = onSnapshot(collection(db, 'employees'), (querySnapshot) => {
+        // 4. Sync Employees (Limited to prevent unscalable reads)
+        const qEmployees = query(collection(db, 'employees'), limit(300));
+        const unsubEmployees = onSnapshot(qEmployees, (querySnapshot) => {
             const employeesArray = [];
             querySnapshot.forEach((doc) => {
                 employeesArray.push({ id: doc.id, ...doc.data() });
@@ -105,7 +105,7 @@ export const FinanceProvider = ({ children }) => {
             unsubEmployees();
             unsubTimeLogs();
         };
-    }, []); // Run once on mount
+    }, [uniqueCategories]); // Run once on mount
 
     const addTransaction = async (transaction) => {
         try {
@@ -341,4 +341,5 @@ export const FinanceProvider = ({ children }) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useFinance = () => useContext(FinanceContext);
