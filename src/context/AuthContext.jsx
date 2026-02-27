@@ -21,7 +21,8 @@ export const AuthProvider = ({ children }) => {
                 try {
                     const userDoc = await getDoc(doc(db, 'users', user.uid));
                     if (userDoc.exists()) {
-                        setUserRole(userDoc.data().role || 'viewer');
+                        const rawRole = userDoc.data().role || 'viewer';
+                        setUserRole(rawRole.toLowerCase().trim());
                     } else {
                         setUserRole('viewer');
                     }

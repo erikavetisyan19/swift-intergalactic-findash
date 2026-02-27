@@ -25,7 +25,7 @@ export class ErrorBoundary extends React.Component {
                     <h1 style={{ fontSize: '2rem', marginBottom: '1rem', fontWeight: 600 }}>Something went wrong.</h1>
                     <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', marginBottom: '2rem', lineHeight: 1.6 }}>
                         The application encountered an unexpected error while loading this page.
-                        {this.state.error && this.state.error.message.includes('Loading chunk') &&
+                        {this.state.error && this.state.error.message && this.state.error.message.includes('Loading chunk') &&
                             " A background update may have occurred. Please refresh the page."}
                     </p>
                     <div style={{ display: 'flex', gap: '1rem' }}>

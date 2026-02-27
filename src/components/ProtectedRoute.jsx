@@ -19,6 +19,19 @@ export const ProtectedRoute = ({ children, allowedRoles }) => {
         if (userRole === 'manager') {
             return <Navigate to="/payroll" replace />;
         }
+
+        // Prevent infinite loop if fallback hits the exact same restricted route
+        if (location.pathname === '/' || location.pathname === '/login') {
+            return (
+                <div style={{ display: 'grid', placeItems: 'center', height: '100vh', color: 'var(--text-secondary)' }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <h2 style={{ marginBottom: '1rem' }}>Unauthorized Access</h2>
+                        <p>Your current role ({userRole}) does not have permission to view this page.</p>
+                    </div>
+                </div>
+            );
+        }
+
         return <Navigate to="/" replace />; // fallback
     }
 
